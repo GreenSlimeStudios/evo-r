@@ -18,6 +18,7 @@ fn main() {
         .add_startup_system(setup_graphics)
         .add_startup_system(setup_physics)
         .add_system(move_objects)
+        .add_system(move_camera_system)
         .run();
 }
 
@@ -36,7 +37,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     /*
      * Ground
      */
-    let ground_size = 5000.0;
+    let ground_size = 50000.0;
     let ground_height = 10.0;
 
     commands.insert_resource(PhysicsHooksWithQueryResource(Box::new(
@@ -59,7 +60,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     offsets.push((
         commands
             .spawn_bundle(TransformBundle {
-                local: Transform::from_xyz(-40.0, 130.0, 0.0),
+                local: Transform::from_xyz(-50.0, 235.0, 0.0),
                 ..default()
             })
             .insert(Name::new("Transform_placeholder"))
@@ -74,7 +75,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     offsets.push((
         commands
             .spawn_bundle(TransformBundle {
-                local: Transform::from_xyz(-40.0, 130.0, 0.0),
+                local: Transform::from_xyz(50.0, 235.0, 0.0),
                 ..default()
             })
             .insert(Name::new("Transform_placeholder"))
@@ -89,7 +90,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     offsets.push((
         commands
             .spawn_bundle(TransformBundle {
-                local: Transform::from_xyz(-40.0, 130.0, 0.0),
+                local: Transform::from_xyz(0.0, 235.0, 0.0),
                 ..default()
             })
             .insert(Name::new("Transform_placeholder"))
@@ -105,7 +106,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     parts.push((
         commands
             .spawn_bundle(TransformBundle {
-                local: Transform::from_xyz(-40.0, 130.0, 0.0),
+                local: Transform::from_xyz(-50.0, 185.0, 0.0),
                 ..default()
             })
             .insert(Name::new("sussy"))
@@ -125,7 +126,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     parts.push((
         commands
             .spawn_bundle(TransformBundle {
-                local: Transform::from_xyz(40.0, 130.0, 0.0),
+                local: Transform::from_xyz(50.0, 185.0, 0.0),
                 ..default()
             })
             .insert(Name::new("sussy"))
@@ -144,7 +145,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     parts.push((
         commands
             .spawn_bundle(TransformBundle {
-                local: Transform::from_xyz(40.0, 130.0, 0.0),
+                local: Transform::from_xyz(0.0, 158.0, 0.0),
                 ..default()
             })
             .insert(Name::new("sussy"))
@@ -157,6 +158,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
             .insert(Leg)
             .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
             .insert(CustomFilterTag::GroupA)
+            .insert(Body)
             .id(),
         RevoluteJointBuilder::new().local_anchor1(Vec2::new(0.0, -50.0)),
     ));
@@ -185,7 +187,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
             angvel: 0.01,
             linvel: Vec2::new(1.0, 1.0),
         })
-        .insert(Collider::cuboid(60.0, 30.0))
+        .insert(Collider::cuboid(60.0, 20.0))
         .insert(RigidBody::Dynamic)
         .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
         .insert(CustomFilterTag::GroupA)
@@ -211,19 +213,19 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
 fn move_objects(mut objects: Query<&mut Velocity, With<Leg>>, keys: Res<Input<KeyCode>>) {
     for mut object in &mut objects {
         if keys.pressed(KeyCode::D) {
-            object.angvel -= 2.0;
+            object.angvel -= 1.5;
         }
         if keys.pressed(KeyCode::A) {
-            object.angvel += 2.0;
+            object.angvel += 1.5;
         }
         if keys.pressed(KeyCode::W) {
             object.linvel.y += 10.0;
         }
-        if object.angvel > 100.0 {
-            object.angvel = 100.0;
+        if object.angvel > 50.0 {
+            object.angvel = 50.0;
         }
-        if object.angvel < -100.0 {
-            object.angvel = -100.0;
+        if object.angvel < -50.0 {
+            object.angvel = -50.0;
         }
     }
 }
@@ -282,6 +284,20 @@ impl<'a> PhysicsHooksWithQuery<&'a CustomFilterTag> for SameUserDataFilter {
             Some(SolverFlags::COMPUTE_IMPULSES)
         } else {
             None
+        }
+    }
+}
+#[derive(Component, Default, Reflect)]
+#[reflect(Component)]
+pub struct Body;
+
+fn move_camera_system(
+    body_transforms: Query<&GlobalTransform, With<Body>>,
+    mut cameras: Query<&mut Transform, With<Camera2d>>,
+) {
+    for mut camera_transform in &mut cameras {
+        for body_transform in &body_transforms {
+            camera_transform.translation.x = body_transform.translation().x;
         }
     }
 }
