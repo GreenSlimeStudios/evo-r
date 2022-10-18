@@ -43,143 +43,11 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     commands.insert_resource(PhysicsHooksWithQueryResource(Box::new(
         SameUserDataFilter {},
     )));
-
-    let mut parts: Vec<(Entity, RevoluteJointBuilder)> = Vec::new();
-    let mut offsets: Vec<(Entity, RevoluteJointBuilder)> = Vec::new();
-
-    commands
-        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
-            0.0,
-            0.0 * -ground_height,
-            0.0,
-        )))
-        .insert(Collider::cuboid(ground_size, ground_height))
-        // .insert(ActiveHooks::FILTER_CONTACT_PAIRS);
-        .insert(CustomFilterTag::GroupB);
-
-    offsets.push((
-        commands
-            .spawn_bundle(TransformBundle {
-                local: Transform::from_xyz(-50.0, 235.0, 0.0),
-                ..default()
-            })
-            .insert(Name::new("Transform_placeholder"))
-            .insert(Collider::cuboid(5.0, 5.0))
-            .insert(RigidBody::Dynamic)
-            .insert(Leg)
-            .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
-            .insert(CustomFilterTag::GroupA)
-            .id(),
-        RevoluteJointBuilder::new().local_anchor2(Vec2::new(-50.0, -15.0)),
-    ));
-    offsets.push((
-        commands
-            .spawn_bundle(TransformBundle {
-                local: Transform::from_xyz(50.0, 235.0, 0.0),
-                ..default()
-            })
-            .insert(Name::new("Transform_placeholder"))
-            .insert(Collider::cuboid(5.0, 5.0))
-            .insert(RigidBody::Dynamic)
-            .insert(Leg)
-            .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
-            .insert(CustomFilterTag::GroupA)
-            .id(),
-        RevoluteJointBuilder::new().local_anchor2(Vec2::new(50.0, -15.0)),
-    ));
-    offsets.push((
-        commands
-            .spawn_bundle(TransformBundle {
-                local: Transform::from_xyz(0.0, 235.0, 0.0),
-                ..default()
-            })
-            .insert(Name::new("Transform_placeholder"))
-            .insert(Collider::cuboid(5.0, 5.0))
-            .insert(RigidBody::Dynamic)
-            .insert(Leg)
-            .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
-            .insert(CustomFilterTag::GroupA)
-            .id(),
-        RevoluteJointBuilder::new().local_anchor2(Vec2::new(0.0, -15.0)),
-    ));
-
-    parts.push((
-        commands
-            .spawn_bundle(TransformBundle {
-                local: Transform::from_xyz(-50.0, 185.0, 0.0),
-                ..default()
-            })
-            .insert(Name::new("sussy"))
-            .insert(Velocity {
-                angvel: 0.01,
-                linvel: Vec2::new(1.0, 1.0),
-            })
-            .insert(Collider::cuboid(10.0, 30.0))
-            .insert(RigidBody::Dynamic)
-            .insert(Leg)
-            .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
-            .insert(CustomFilterTag::GroupA)
-            .id(),
-        RevoluteJointBuilder::new().local_anchor1(Vec2::new(0.0, -50.0)),
-    ));
-
-    parts.push((
-        commands
-            .spawn_bundle(TransformBundle {
-                local: Transform::from_xyz(50.0, 185.0, 0.0),
-                ..default()
-            })
-            .insert(Name::new("sussy"))
-            .insert(Velocity {
-                angvel: 0.01,
-                linvel: Vec2::new(1.0, 1.0),
-            })
-            .insert(Collider::cuboid(10.0, 30.0))
-            .insert(RigidBody::Dynamic)
-            .insert(Leg)
-            .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
-            .insert(CustomFilterTag::GroupA)
-            .id(),
-        RevoluteJointBuilder::new().local_anchor1(Vec2::new(0.0, -50.0)),
-    ));
-    parts.push((
-        commands
-            .spawn_bundle(TransformBundle {
-                local: Transform::from_xyz(0.0, 158.0, 0.0),
-                ..default()
-            })
-            .insert(Name::new("sussy"))
-            .insert(Velocity {
-                angvel: 0.01,
-                linvel: Vec2::new(1.0, 1.0),
-            })
-            .insert(Collider::cuboid(10.0, 30.0))
-            .insert(RigidBody::Dynamic)
-            .insert(Leg)
-            .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
-            .insert(CustomFilterTag::GroupA)
-            .insert(Body)
-            .id(),
-        RevoluteJointBuilder::new().local_anchor1(Vec2::new(0.0, -50.0)),
-    ));
-    // let child_entity3 = commands
-    //     .spawn_bundle(TransformBundle {
-    //         local: Transform::from_xyz(0.0, 200.0, 0.0),
-    //         ..default()
-    //     })
-    //     .insert(Name::new("sussy"))
-    //     .insert(Velocity {
-    //         angvel: 0.01,
-    //         linvel: Vec2::new(1.0, 1.0),
-    //     })
-    //     .insert(Collider::cuboid(10.0, 30.0))
-    //     .insert(RigidBody::Dynamic)
-    //     .insert(Leg)
-    //     .id();
+    let entity_pos: Vec3 = Vec3::new(0.0, 300.0, 0.0);
 
     let parent_entity = commands
         .spawn_bundle(TransformBundle {
-            local: Transform::from_xyz(0.0, 250.0, 0.0),
+            local: Transform::from_xyz(entity_pos.x, entity_pos.y, entity_pos.z),
             ..default()
         })
         .insert(Name::new("sussy_parent"))
@@ -193,21 +61,65 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
         .insert(CustomFilterTag::GroupA)
         .id();
 
-    let joint = RevoluteJointBuilder::new().local_anchor2(Vec2::new(-40.0, -80.0));
-    let joint2 = RevoluteJointBuilder::new().local_anchor2(Vec2::new(40.0, -80.0));
-    let joint3 = RevoluteJointBuilder::new().local_anchor2(Vec2::new(0.0, 120.0));
+    let mut parts: Vec<(Entity, RevoluteJointBuilder)> = Vec::new();
+    let mut offsets: Vec<(Entity, RevoluteJointBuilder)> = Vec::new();
+    let mut final_parts: Vec<(Entity, RevoluteJointBuilder)> = Vec::new();
 
-    for i in 0..offsets.len() {
-        commands.entity(parent_entity).with_children(|cmd| {
-            cmd.spawn()
-                .insert(ImpulseJoint::new(offsets[i].0, offsets[i].1));
-        });
-    }
-    for i in 0..offsets.len() {
-        commands.entity(offsets[i].0).with_children(|cmd| {
-            cmd.spawn()
-                .insert(ImpulseJoint::new(parts[i].0, parts[i].1));
-        });
+    final_parts.push(create_entity(
+        PartData {
+            joint_parrent_offset: Vec2::new(40.0, 10.0),
+            joint_offset: Vec2::new(0.0, -15.0),
+            transform: entity_pos,
+            part_size: Vec2::new(10.0, 30.0),
+        },
+        &mut commands,
+    ));
+    final_parts.push(create_entity(
+        PartData {
+            joint_parrent_offset: Vec2::new(-40.0, -10.0),
+            joint_offset: Vec2::new(0.0, 15.0),
+            transform: entity_pos,
+            part_size: Vec2::new(10.0, 30.0),
+        },
+        &mut commands,
+    ));
+    // let double_thing = create_entity(
+    //     PartData {
+    //         joint_parrent_offset: Vec2::new(40.0, 10.0),
+    //         joint_offset: Vec2::new(0.0, -50.0),
+    //         transform: Vec3::new(40.0, 10.0, 0.0),
+    //         part_size: Vec2::new(10.0, 30.0),
+    //     },
+    //     &mut commands,
+    // );
+    // connect_to_parrent(
+    //     final_parts[0].0,
+    //     double_thing.0,
+    //     double_thing.1,
+    //     &mut commands,
+    // );
+
+    commands
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+            0.0,
+            0.0 * -ground_height,
+            0.0,
+        )))
+        .insert(Collider::cuboid(ground_size, ground_height))
+        // .insert(ActiveHooks::FILTER_CONTACT_PAIRS);
+        .insert(CustomFilterTag::GroupB);
+
+    for i in 0..final_parts.len() {
+        connect_to_parrent(
+            parent_entity,
+            final_parts[i].0,
+            final_parts[i].1,
+            &mut commands,
+        )
+        // commands.entity(parent_entity).with_children(|cmd| {
+        //     cmd.spawn()
+        //         .insert(ImpulseJoint::new(final_parts[i].0, final_parts[i].1));
+        // });
     }
 }
 fn move_objects(mut objects: Query<&mut Velocity, With<Leg>>, keys: Res<Input<KeyCode>>) {
@@ -300,4 +212,76 @@ fn move_camera_system(
             camera_transform.translation.x = body_transform.translation().x;
         }
     }
+}
+
+pub struct PartData {
+    joint_parrent_offset: Vec2,
+    joint_offset: Vec2,
+    transform: Vec3,
+    part_size: Vec2,
+}
+
+fn create_entity(part_data: PartData, commands: &mut Commands) -> (Entity, RevoluteJointBuilder) {
+    let mut entity: Entity = commands
+        .spawn_bundle(TransformBundle {
+            local: Transform::from_xyz(
+                part_data.transform.x + part_data.joint_parrent_offset.x,
+                part_data.transform.y + part_data.joint_parrent_offset.y,
+                part_data.transform.z,
+            ),
+            ..default()
+        })
+        .insert(Name::new("joint"))
+        .insert(Collider::cuboid(5.0, 5.0))
+        .insert(RigidBody::Dynamic)
+        .insert(Leg)
+        .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
+        .insert(CustomFilterTag::GroupA)
+        .id();
+
+    let joint_to_parrent =
+        RevoluteJointBuilder::new().local_anchor2(part_data.joint_parrent_offset);
+    let joint_to_joint = RevoluteJointBuilder::new().local_anchor1(part_data.joint_offset);
+
+    let mut part_entity = commands
+        .spawn_bundle(TransformBundle {
+            local: Transform::from_xyz(
+                part_data.transform.x + part_data.joint_offset.x + part_data.joint_parrent_offset.x,
+                part_data.transform.y + part_data.joint_offset.y + part_data.joint_parrent_offset.y,
+                part_data.transform.z,
+            ),
+            ..default()
+        })
+        .insert(Name::new("sussy"))
+        .insert(Velocity {
+            angvel: 0.01,
+            linvel: Vec2::new(1.0, 1.0),
+        })
+        .insert(Collider::cuboid(
+            part_data.part_size.x,
+            part_data.part_size.y,
+        ))
+        .insert(RigidBody::Dynamic)
+        .insert(Leg)
+        .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
+        .insert(CustomFilterTag::GroupA)
+        .id();
+
+    commands.entity(entity).with_children(|cmd| {
+        cmd.spawn()
+            .insert(ImpulseJoint::new(part_entity, joint_to_joint));
+    });
+
+    (entity, joint_to_parrent)
+}
+
+fn connect_to_parrent(
+    parent_entity: Entity,
+    child_entity: Entity,
+    joint: RevoluteJointBuilder,
+    commands: &mut Commands,
+) {
+    commands.entity(parent_entity).with_children(|cmd| {
+        cmd.spawn().insert(ImpulseJoint::new(child_entity, joint));
+    });
 }
