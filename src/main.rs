@@ -73,19 +73,19 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
 
     parts.push(PartConstructorData {
         parts: vec![
+            // create_part(
+            //     PartData {
+            //         joint_parrent_offset: Vec2::new(0.0, 60.0),
+            //         joint_offset: Vec2::new(0.0, 30.0),
+            //         transform: entity_pos,
+            //         part_size: Vec2::new(10.0, 30.0),
+            //     },
+            //     &mut commands,
+            // ),
             create_part(
                 PartData {
-                    joint_parrent_offset: Vec2::new(0.0, 60.0),
-                    joint_offset: Vec2::new(0.0, 30.0),
-                    transform: entity_pos,
-                    part_size: Vec2::new(10.0, 30.0),
-                },
-                &mut commands,
-            ),
-            create_part(
-                PartData {
-                    joint_parrent_offset: Vec2::new(0.0, 40.0),
-                    joint_offset: Vec2::new(0.0, -50.0),
+                    joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
+                    joint_offset: Vec2::new(0.0, -50.0),        // y 10 lower than in part size y
                     transform: entity_pos,
                     part_size: Vec2::new(10.0, 60.0),
                 },
@@ -94,9 +94,9 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
             create_part(
                 PartData {
                     joint_parrent_offset: Vec2::new(40.0, 10.0),
-                    joint_offset: Vec2::new(0.0, -30.0),
+                    joint_offset: Vec2::new(0.0, -30.0), // y 10 lower than in part size y
                     transform: entity_pos,
-                    part_size: Vec2::new(10.0, 40.0),
+                    part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
                 },
                 &mut commands,
             ),
@@ -125,7 +125,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
             create_part(
                 PartData {
                     joint_parrent_offset: Vec2::new(-40.0, -10.0),
-                    joint_offset: Vec2::new(0.0, -30.0),
+                    joint_offset: Vec2::new(0.0, -40.0),
                     transform: entity_pos,
                     part_size: Vec2::new(10.0, 40.0),
                 },
@@ -163,27 +163,14 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
         .insert(Collider::cuboid(ground_size, ground_height))
         // .insert(ActiveHooks::FILTER_CONTACT_PAIRS);
         .insert(CustomFilterTag::GroupB);
-
-    // for i in 0..final_parts.len() {
-    //     connect_to_parrent(
-    //         parent_entity,
-    //         final_parts[i].0,
-    //         final_parts[i].1,
-    //         &mut commands,
-    //     )
-    // commands.entity(parent_entity).with_children(|cmd| {
-    //     cmd.spawn()
-    //         .insert(ImpulseJoint::new(final_parts[i].0, final_parts[i].1));
-    // });
-    // }
 }
 fn move_objects(mut objects: Query<&mut Velocity, With<Leg>>, keys: Res<Input<KeyCode>>) {
     for mut object in &mut objects {
         if keys.pressed(KeyCode::D) {
-            object.angvel -= 1.5;
+            object.angvel -= 1.0;
         }
         if keys.pressed(KeyCode::A) {
-            object.angvel += 1.5;
+            object.angvel += 1.0;
         }
         if keys.pressed(KeyCode::W) {
             object.linvel.y += 10.0;
@@ -194,33 +181,6 @@ fn move_objects(mut objects: Query<&mut Velocity, With<Leg>>, keys: Res<Input<Ke
         if object.angvel < -50.0 {
             object.angvel = -50.0;
         }
-    }
-}
-
-#[derive(Component, Default, Reflect)]
-#[reflect(Component)]
-struct Player;
-fn player_movement(
-    keyboard_input: Res<Input<KeyCode>>,
-    mut player_info: Query<(&Player, &mut Velocity)>,
-) {
-    for (player, mut rb_vels) in player_info.iter_mut() {
-        let up = keyboard_input.pressed(KeyCode::W) || keyboard_input.pressed(KeyCode::Up);
-        let down = keyboard_input.pressed(KeyCode::S) || keyboard_input.pressed(KeyCode::Down);
-        let left = keyboard_input.pressed(KeyCode::A) || keyboard_input.pressed(KeyCode::Left);
-        let right = keyboard_input.pressed(KeyCode::D) || keyboard_input.pressed(KeyCode::Right);
-
-        let x_axis = -(left as i8) + right as i8;
-        let y_axis = -(down as i8) + up as i8;
-
-        let mut move_delta = Vec2::new(x_axis as f32, y_axis as f32);
-        if move_delta != Vec2::ZERO {
-            move_delta /= move_delta.length();
-        }
-
-        // Update the velocity on the rigid_body_component,
-        // the bevy_rapier plugin will update the Sprite transform.
-        rb_vels.linvel = move_delta;
     }
 }
 
@@ -276,61 +236,6 @@ pub struct PartData {
     part_size: Vec2,
 }
 
-fn create_entity(part_data: PartData, commands: &mut Commands) -> (Entity, RevoluteJointBuilder) {
-    let mut entity: Entity = commands
-        .spawn_bundle(TransformBundle {
-            local: Transform::from_xyz(
-                part_data.transform.x + part_data.joint_parrent_offset.x,
-                part_data.transform.y + part_data.joint_parrent_offset.y,
-                part_data.transform.z,
-            ),
-            ..default()
-        })
-        .insert(Name::new("joint"))
-        .insert(Collider::cuboid(5.0, 5.0))
-        .insert(RigidBody::Dynamic)
-        // .insert(Leg)
-        .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
-        .insert(CustomFilterTag::GroupA)
-        .id();
-
-    let joint_to_parrent =
-        RevoluteJointBuilder::new().local_anchor2(part_data.joint_parrent_offset);
-    let joint_to_joint = RevoluteJointBuilder::new().local_anchor1(part_data.joint_offset);
-
-    let mut part_entity = commands
-        .spawn_bundle(TransformBundle {
-            local: Transform::from_xyz(
-                part_data.transform.x + part_data.joint_parrent_offset.x,
-                // + part_data.part_size.x / 2.0,
-                part_data.transform.y + part_data.joint_parrent_offset.y,
-                // + part_data.part_size.y / 2.0,
-                part_data.transform.z,
-            ),
-            ..default()
-        })
-        .insert(Name::new("sussy"))
-        .insert(Velocity {
-            angvel: 0.01,
-            linvel: Vec2::new(1.0, 1.0),
-        })
-        .insert(Collider::cuboid(
-            part_data.part_size.x,
-            part_data.part_size.y,
-        ))
-        .insert(RigidBody::Dynamic)
-        .insert(Leg)
-        .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
-        .insert(CustomFilterTag::GroupA)
-        .id();
-
-    commands.entity(entity).with_children(|cmd| {
-        cmd.spawn()
-            .insert(ImpulseJoint::new(part_entity, joint_to_joint));
-    });
-
-    (entity, joint_to_parrent)
-}
 fn create_part(
     part_data: PartData,
     commands: &mut Commands,
