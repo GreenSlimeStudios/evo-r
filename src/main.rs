@@ -164,18 +164,18 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
         // .insert(ActiveHooks::FILTER_CONTACT_PAIRS);
         .insert(CustomFilterTag::GroupB);
 
-    for i in 0..final_parts.len() {
-        connect_to_parrent(
-            parent_entity,
-            final_parts[i].0,
-            final_parts[i].1,
-            &mut commands,
-        )
-        // commands.entity(parent_entity).with_children(|cmd| {
-        //     cmd.spawn()
-        //         .insert(ImpulseJoint::new(final_parts[i].0, final_parts[i].1));
-        // });
-    }
+    // for i in 0..final_parts.len() {
+    //     connect_to_parrent(
+    //         parent_entity,
+    //         final_parts[i].0,
+    //         final_parts[i].1,
+    //         &mut commands,
+    //     )
+    // commands.entity(parent_entity).with_children(|cmd| {
+    //     cmd.spawn()
+    //         .insert(ImpulseJoint::new(final_parts[i].0, final_parts[i].1));
+    // });
+    // }
 }
 fn move_objects(mut objects: Query<&mut Velocity, With<Leg>>, keys: Res<Input<KeyCode>>) {
     for mut object in &mut objects {
