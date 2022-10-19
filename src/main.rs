@@ -37,7 +37,7 @@ pub struct Leg;
 pub struct PartConstructorData {
     // joint_entity: Entity,
     // joint_builder: RevoluteJointBuilder,
-    parts: Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>,
+    pub parts: Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>,
 }
 
 pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierConfiguration>) {
@@ -63,95 +63,70 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
             angvel: 0.01,
             linvel: Vec2::new(1.0, 1.0),
         })
-        .insert(Collider::cuboid(60.0, 20.0))
+        .insert(Collider::cuboid(60.0, 60.0))
         .insert(RigidBody::Dynamic)
         .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
         .insert(CustomFilterTag::GroupA)
         .id();
 
-    let mut parts: Vec<PartConstructorData> = Vec::new();
+    let mut part_datas: Vec<Vec<PartData>> = Vec::new();
+    let mut parts: Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>> =
+        Vec::new();
 
-    parts.push(PartConstructorData {
-        parts: vec![
-            // create_part(
-            //     PartData {
-            //         joint_parrent_offset: Vec2::new(0.0, 60.0),
-            //         joint_offset: Vec2::new(0.0, 30.0),
-            //         transform: entity_pos,
-            //         part_size: Vec2::new(10.0, 30.0),
-            //     },
-            //     &mut commands,
-            // ),
-            create_part(
-                PartData {
-                    joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
-                    joint_offset: Vec2::new(0.0, -50.0),        // y 10 lower than in part size y
-                    transform: entity_pos,
-                    part_size: Vec2::new(10.0, 60.0),
-                },
-                &mut commands,
-            ),
-            create_part(
-                PartData {
-                    joint_parrent_offset: Vec2::new(40.0, 10.0),
-                    joint_offset: Vec2::new(0.0, -30.0), // y 10 lower than in part size y
-                    transform: entity_pos,
-                    part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
-                },
-                &mut commands,
-            ),
-        ],
+    part_datas.push(Vec::new());
+    part_datas[0].push(PartData {
+        joint_parrent_offset: Vec2::new(40.0, 10.0),
+        joint_offset: Vec2::new(0.0, -30.0), // y 10 lower than in part size y
+        transform: entity_pos,
+        part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
     });
-    parts.push(PartConstructorData {
-        parts: vec![
-            // create_part(
-            //     PartData {
-            //         joint_parrent_offset: Vec2::new(0.0, -70.0),
-            //         joint_offset: Vec2::new(0.0, 15.0),
-            //         transform: entity_pos,
-            //         part_size: Vec2::new(10.0, 30.0),
-            //     },
-            //     &mut commands,
-            // ),
-            create_part(
-                PartData {
-                    joint_parrent_offset: Vec2::new(0.0, 40.0),
-                    joint_offset: Vec2::new(0.0, -50.0),
-                    transform: entity_pos,
-                    part_size: Vec2::new(10.0, 60.0),
-                },
-                &mut commands,
-            ),
-            create_part(
-                PartData {
-                    joint_parrent_offset: Vec2::new(-40.0, -10.0),
-                    joint_offset: Vec2::new(0.0, -40.0),
-                    transform: entity_pos,
-                    part_size: Vec2::new(10.0, 40.0),
-                },
-                &mut commands,
-            ),
-        ],
+    part_datas[0].push(PartData {
+        joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
+        joint_offset: Vec2::new(0.0, -50.0),        // y 10 lower than in part size y
+        transform: entity_pos,
+        part_size: Vec2::new(10.0, 60.0),
     });
+    part_datas.push(Vec::new());
+    part_datas[1].push(PartData {
+        joint_parrent_offset: Vec2::new(-40.0, -10.0),
+        joint_offset: Vec2::new(0.0, -30.0), // y 10 lower than in part size y
+        transform: entity_pos,
+        part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
+    });
+    part_datas[1].push(PartData {
+        joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
+        joint_offset: Vec2::new(0.0, -50.0),        // y 10 lower than in part size y
+        transform: entity_pos,
+        part_size: Vec2::new(10.0, 60.0),
+    });
+
+    for i in 0..part_datas.len() {
+        parts.push(Vec::new());
+        for j in 0..part_datas[i].len() {
+            parts[i].push(create_part(&part_datas[i][j], &mut commands));
+        }
+    }
 
     for i in 0..parts.len() {
-        for j in 0..parts[i].parts.len() {
-            commands.entity(parts[i].parts[j].0).with_children(|cmd| {
+        parts[i].reverse();
+        for j in 0..parts[i].len() {
+            commands.entity(parts[i][j].0).with_children(|cmd| {
                 cmd.spawn()
-                    .insert(ImpulseJoint::new(parts[i].parts[j].2, parts[i].parts[j].3));
+                    .insert(ImpulseJoint::new(parts[i][j].2, parts[i][j].3));
             });
 
             commands
-                .entity(if j + 1 != parts[i].parts.len() {
-                    parts[i].parts[j + 1].2
+                .entity(if j + 1 != parts[i].len() {
+                    parts[i][j + 1].2
                 } else {
                     parent_entity
                 })
                 .with_children(|cmd| {
                     cmd.spawn()
-                        .insert(ImpulseJoint::new(parts[i].parts[j].0, parts[i].parts[j].1));
+                        .insert(ImpulseJoint::new(parts[i][j].0, parts[i][j].1));
                 });
         }
+        parts[i].reverse();
     }
 
     commands
@@ -237,7 +212,7 @@ pub struct PartData {
 }
 
 fn create_part(
-    part_data: PartData,
+    part_data: &PartData,
     commands: &mut Commands,
 ) -> (Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder) {
     let entity: Entity = commands
