@@ -41,7 +41,8 @@ pub struct PartConstructorData {
 }
 
 pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierConfiguration>) {
-    reapier_config.gravity = Vec2::new(0.0, -200.0);
+    reapier_config.gravity = Vec2::new(0.0, -300.0);
+
     /*
      * Ground
      */
@@ -51,7 +52,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     commands.insert_resource(PhysicsHooksWithQueryResource(Box::new(
         SameUserDataFilter {},
     )));
-    let entity_pos: Vec3 = Vec3::new(0.0, 200.0, 0.0);
+    let entity_pos: Vec3 = Vec3::new(0.0, 400.0, 0.0);
 
     let parent_entity = commands
         .spawn_bundle(TransformBundle {
@@ -77,57 +78,56 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     part_datas[0].push(PartData {
         joint_parrent_offset: Vec2::new(40.0, 10.0),
         joint_offset: Vec2::new(0.0, -30.0), // y 10 lower than in part size y
-        transform: entity_pos,
+        transform: Vec3::new(entity_pos.x + 40.0, entity_pos.y + 10.0, 0.0),
         part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
     });
     part_datas[0].push(PartData {
         joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
         joint_offset: Vec2::new(0.0, -50.0),        // y 10 lower than in part size y
-        transform: entity_pos,
+        transform: Vec3::new(entity_pos.x + 40.0, entity_pos.y + 10.0 - 40.0, 0.0),
         part_size: Vec2::new(10.0, 60.0),
     });
     part_datas.push(Vec::new());
     part_datas[1].push(PartData {
         joint_parrent_offset: Vec2::new(-40.0, -10.0),
         joint_offset: Vec2::new(0.0, -30.0), // y 10 lower than in part size y
-        transform: entity_pos,
+        transform: Vec3::new(entity_pos.x - 40.0, entity_pos.y - 10.0, 0.0),
         part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
     });
     part_datas[1].push(PartData {
         joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
         joint_offset: Vec2::new(0.0, -50.0),        // y 10 lower than in part size y
-        transform: entity_pos,
+        transform: Vec3::new(entity_pos.x - 40.0, entity_pos.y - 10.0 - 40.0, 0.0),
+        part_size: Vec2::new(10.0, 60.0),
+    });
+    part_datas.push(Vec::new());
+    part_datas[2].push(PartData {
+        joint_parrent_offset: Vec2::new(0.0, 10.0),
+        joint_offset: Vec2::new(0.0, -30.0), // y 10 lower than in part size y
+        transform: Vec3::new(entity_pos.x, entity_pos.y + 10.0, 0.0),
+        part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
+    });
+    part_datas[2].push(PartData {
+        joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
+        joint_offset: Vec2::new(0.0, -50.0),        // y 10 lower than in part size y
+        transform: Vec3::new(entity_pos.x, entity_pos.y + 10.0 - 40.0, 0.0),
+        part_size: Vec2::new(10.0, 60.0),
+    });
+    part_datas.push(Vec::new());
+    part_datas[3].push(PartData {
+        joint_parrent_offset: Vec2::new(0.0, -10.0),
+        joint_offset: Vec2::new(0.0, -30.0), // y 10 lower than in part size y
+        transform: Vec3::new(entity_pos.x, entity_pos.y - 10.0, 0.0),
+        part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
+    });
+    part_datas[3].push(PartData {
+        joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
+        joint_offset: Vec2::new(0.0, -50.0),        // y 10 lower than in part size y
+        transform: Vec3::new(entity_pos.x, entity_pos.y - 10.0 - 40.0, 0.0),
         part_size: Vec2::new(10.0, 60.0),
     });
 
-    for i in 0..part_datas.len() {
-        parts.push(Vec::new());
-        for j in 0..part_datas[i].len() {
-            parts[i].push(create_part(&part_datas[i][j], &mut commands));
-        }
-    }
-
-    for i in 0..parts.len() {
-        parts[i].reverse();
-        for j in 0..parts[i].len() {
-            commands.entity(parts[i][j].0).with_children(|cmd| {
-                cmd.spawn()
-                    .insert(ImpulseJoint::new(parts[i][j].2, parts[i][j].3));
-            });
-
-            commands
-                .entity(if j + 1 != parts[i].len() {
-                    parts[i][j + 1].2
-                } else {
-                    parent_entity
-                })
-                .with_children(|cmd| {
-                    cmd.spawn()
-                        .insert(ImpulseJoint::new(parts[i][j].0, parts[i][j].1));
-                });
-        }
-        parts[i].reverse();
-    }
+    construct_entity(&part_datas, &mut parts, parent_entity, &mut commands);
 
     commands
         .spawn_bundle(TransformBundle::from(Transform::from_xyz(
@@ -138,6 +138,8 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
         .insert(Collider::cuboid(ground_size, ground_height))
         // .insert(ActiveHooks::FILTER_CONTACT_PAIRS);
         .insert(CustomFilterTag::GroupB);
+
+    commands.insert_resource(part_datas);
 }
 fn move_objects(mut objects: Query<&mut Velocity, With<Leg>>, keys: Res<Input<KeyCode>>) {
     for mut object in &mut objects {
@@ -279,4 +281,62 @@ fn connect_to_parrent(
     commands.entity(parent_entity).with_children(|cmd| {
         cmd.spawn().insert(ImpulseJoint::new(child_entity, joint));
     });
+}
+
+fn delete_entities(
+    commands: &mut Commands,
+    parts: &mut Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>,
+) {
+    for i in 0..parts.len() {
+        commands.entity(parts[i][0].0).despawn_recursive();
+    }
+    parts.clear();
+}
+
+fn construct_entity(
+    part_datas: &Vec<Vec<PartData>>,
+    parts: &mut Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>,
+    parent_entity: Entity,
+    commands: &mut Commands,
+) {
+    delete_entities(commands, parts);
+
+    for i in 0..part_datas.len() {
+        parts.push(Vec::new());
+        for j in 0..part_datas[i].len() {
+            parts[i].push(create_part(&part_datas[i][j], commands));
+        }
+    }
+
+    for i in 0..parts.len() {
+        parts[i].reverse();
+        for j in 0..parts[i].len() {
+            commands.entity(parts[i][j].0).with_children(|cmd| {
+                cmd.spawn()
+                    .insert(ImpulseJoint::new(parts[i][j].2, parts[i][j].3));
+            });
+
+            commands
+                .entity(if j + 1 != parts[i].len() {
+                    parts[i][j + 1].2
+                } else {
+                    parent_entity
+                })
+                .with_children(|cmd| {
+                    cmd.spawn()
+                        .insert(ImpulseJoint::new(parts[i][j].0, parts[i][j].1));
+                });
+        }
+        parts[i].reverse();
+    }
+}
+#[derive(Component, Default, Reflect)]
+#[reflect(Component)]
+struct Parent;
+fn respawn_entity_system(
+    commands: &mut Commands,
+    parent_entity: Query<Entity, With<Parent>>,
+    part_data: Res<PartData>,
+    parts: ResMut<Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>>,
+) {
 }
