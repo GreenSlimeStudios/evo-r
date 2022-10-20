@@ -21,6 +21,7 @@ fn main() {
         .add_startup_system(setup_physics)
         .add_system(move_objects)
         .add_system(move_camera_system)
+        .add_system(respawn_entity_system)
         .run();
 }
 
@@ -34,6 +35,10 @@ fn setup_graphics(mut commands: Commands) {
 #[reflect(Component)]
 pub struct Leg;
 
+#[derive(Component, Default, Reflect)]
+#[reflect(Component)]
+pub struct Joint;
+
 pub struct PartConstructorData {
     // joint_entity: Entity,
     // joint_builder: RevoluteJointBuilder,
@@ -41,7 +46,7 @@ pub struct PartConstructorData {
 }
 
 pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierConfiguration>) {
-    reapier_config.gravity = Vec2::new(0.0, -300.0);
+    reapier_config.gravity = Vec2::new(0.0, 0.0);
 
     /*
      * Ground
@@ -52,7 +57,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     commands.insert_resource(PhysicsHooksWithQueryResource(Box::new(
         SameUserDataFilter {},
     )));
-    let entity_pos: Vec3 = Vec3::new(0.0, 400.0, 0.0);
+    let entity_pos: Vec3 = Vec3::new(0.0, 600.0, 0.0);
 
     let parent_entity = commands
         .spawn_bundle(TransformBundle {
@@ -68,6 +73,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
         .insert(RigidBody::Dynamic)
         .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
         .insert(CustomFilterTag::GroupA)
+        .insert(Parent)
         .id();
 
     let mut part_datas: Vec<Vec<PartData>> = Vec::new();
@@ -139,7 +145,12 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
         // .insert(ActiveHooks::FILTER_CONTACT_PAIRS);
         .insert(CustomFilterTag::GroupB);
 
-    commands.insert_resource(part_datas);
+    reapier_config.gravity = Vec2::new(0.0, -250.0);
+    // commands.insert_resource(part_datas);
+    commands
+        .spawn_bundle(TransformBundle::default())
+        .insert(EntityData { data: part_datas })
+        .insert(EntityParts { parts: parts });
 }
 fn move_objects(mut objects: Query<&mut Velocity, With<Leg>>, keys: Res<Input<KeyCode>>) {
     for mut object in &mut objects {
@@ -227,6 +238,7 @@ fn create_part(
             ..default()
         })
         .insert(Name::new("joint"))
+        .insert(Joint)
         .insert(Collider::cuboid(5.0, 5.0))
         .insert(RigidBody::Dynamic)
         // .insert(Leg)
@@ -288,7 +300,10 @@ fn delete_entities(
     parts: &mut Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>,
 ) {
     for i in 0..parts.len() {
-        commands.entity(parts[i][0].0).despawn_recursive();
+        for j in 0..parts[i].len() {
+            commands.entity(parts[i][j].0).despawn_recursive();
+            commands.entity(parts[i][j].2).despawn_recursive();
+        }
     }
     parts.clear();
 }
@@ -333,10 +348,44 @@ fn construct_entity(
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
 struct Parent;
+
+#[derive(Component, Default, Reflect)]
+#[reflect(Component)]
+pub struct EntityData {
+    #[reflect(ignore)]
+    pub data: Vec<Vec<PartData>>,
+}
+#[derive(Component, Default, Reflect)]
+#[reflect(Component)]
+pub struct EntityParts {
+    #[reflect(ignore)]
+    pub parts: Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>,
+}
+
 fn respawn_entity_system(
-    commands: &mut Commands,
+    keys: Res<Input<KeyCode>>,
+    mut commands: Commands,
     parent_entity: Query<Entity, With<Parent>>,
-    part_data: Res<PartData>,
-    parts: ResMut<Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>>,
+    part_datas: Query<&EntityData>,
+    mut parts: Query<&mut EntityParts>,
+    // parts: ResMut<Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>>,
 ) {
+    if keys.just_pressed(KeyCode::R) {
+        println!("check 1");
+        for parent_entity in &parent_entity {
+            println!("check 2");
+            for part_data in &part_datas {
+                println!("check 3");
+                for mut parts in &mut parts {
+                    println!("check 4");
+                    construct_entity(
+                        &part_data.data,
+                        &mut parts.parts,
+                        parent_entity,
+                        &mut commands,
+                    );
+                }
+            }
+        }
+    }
 }
