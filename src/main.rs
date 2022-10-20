@@ -59,21 +59,26 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     )));
     let entity_pos: Vec3 = Vec3::new(0.0, 600.0, 0.0);
 
+    let parent_data: Parent = Parent {
+        position: entity_pos,
+        size: Vec2::new(60.0, 60.0),
+    };
+
     let parent_entity = commands
         .spawn_bundle(TransformBundle {
             local: Transform::from_xyz(entity_pos.x, entity_pos.y, entity_pos.z),
             ..default()
         })
         .insert(Name::new("sussy_parent"))
-        .insert(Velocity {
-            angvel: 0.01,
-            linvel: Vec2::new(1.0, 1.0),
-        })
-        .insert(Collider::cuboid(60.0, 60.0))
+        .insert(Velocity::zero())
+        .insert(Collider::cuboid(parent_data.size.x, parent_data.size.y))
         .insert(RigidBody::Dynamic)
         .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
         .insert(CustomFilterTag::GroupA)
-        .insert(Parent)
+        .insert(Parent {
+            size: parent_data.size,
+            position: parent_data.position,
+        })
         .id();
 
     let mut part_datas: Vec<Vec<PartData>> = Vec::new();
@@ -133,7 +138,12 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
         part_size: Vec2::new(10.0, 60.0),
     });
 
-    construct_entity(&part_datas, &mut parts, parent_entity, &mut commands);
+    construct_entity(
+        &part_datas,
+        &mut parts,
+        (parent_entity, &parent_data),
+        &mut commands,
+    );
 
     commands
         .spawn_bundle(TransformBundle::from(Transform::from_xyz(
@@ -298,7 +308,9 @@ fn connect_to_parrent(
 fn delete_entities(
     commands: &mut Commands,
     parts: &mut Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>,
+    parent: Entity,
 ) {
+    commands.entity(parent).despawn_recursive();
     for i in 0..parts.len() {
         for j in 0..parts[i].len() {
             commands.entity(parts[i][j].0).despawn_recursive();
@@ -311,10 +323,11 @@ fn delete_entities(
 fn construct_entity(
     part_datas: &Vec<Vec<PartData>>,
     parts: &mut Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>,
-    parent_entity: Entity,
+    mut parent: (Entity, &Parent),
     commands: &mut Commands,
 ) {
-    delete_entities(commands, parts);
+    delete_entities(commands, parts, parent.0);
+    parent.0 = spawn_parent(parent.1, commands);
 
     for i in 0..part_datas.len() {
         parts.push(Vec::new());
@@ -335,7 +348,7 @@ fn construct_entity(
                 .entity(if j + 1 != parts[i].len() {
                     parts[i][j + 1].2
                 } else {
-                    parent_entity
+                    parent.0
                 })
                 .with_children(|cmd| {
                     cmd.spawn()
@@ -347,7 +360,10 @@ fn construct_entity(
 }
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
-struct Parent;
+struct Parent {
+    position: Vec3,
+    size: Vec2,
+}
 
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
@@ -365,7 +381,7 @@ pub struct EntityParts {
 fn respawn_entity_system(
     keys: Res<Input<KeyCode>>,
     mut commands: Commands,
-    parent_entity: Query<Entity, With<Parent>>,
+    parent_entity: Query<(Entity, &Parent)>,
     part_datas: Query<&EntityData>,
     mut parts: Query<&mut EntityParts>,
     // parts: ResMut<Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>>,
@@ -388,4 +404,27 @@ fn respawn_entity_system(
             }
         }
     }
+}
+
+fn spawn_parent(parent_data: &Parent, commands: &mut Commands) -> Entity {
+    commands
+        .spawn_bundle(TransformBundle {
+            local: Transform::from_xyz(
+                parent_data.position.x,
+                parent_data.position.y,
+                parent_data.position.z,
+            ),
+            ..default()
+        })
+        .insert(Name::new("sussy_parent"))
+        .insert(Velocity::zero())
+        .insert(Collider::cuboid(parent_data.size.x, parent_data.size.y))
+        .insert(RigidBody::Dynamic)
+        .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
+        .insert(CustomFilterTag::GroupA)
+        .insert(Parent {
+            size: parent_data.size,
+            position: parent_data.position,
+        })
+        .id()
 }
