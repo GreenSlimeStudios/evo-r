@@ -4,11 +4,7 @@ use bevy_rapier2d::prelude::*;
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(
-            0xF9 as f32 / 255.0,
-            0xF9 as f32 / 255.0,
-            0xFF as f32 / 255.0,
-        )))
+        .insert_resource(ClearColor(Color::rgb(0.2, 0.2, 0.2)))
         .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
         // .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
@@ -89,52 +85,52 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     part_datas[0].push(PartData {
         joint_parrent_offset: Vec2::new(40.0, 10.0),
         joint_offset: Vec2::new(0.0, -30.0), // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x + 40.0, entity_pos.y + 10.0, 0.0),
+        transform: Vec3::new(entity_pos.x, entity_pos.y + 20.0, 0.0),
         part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
     });
     part_datas[0].push(PartData {
         joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
         joint_offset: Vec2::new(0.0, -50.0),        // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x + 40.0, entity_pos.y + 10.0 - 40.0, 0.0),
+        transform: Vec3::new(entity_pos.x + 40.0, entity_pos.y + 10.0 + 80.0, 0.0),
         part_size: Vec2::new(10.0, 60.0),
     });
     part_datas.push(Vec::new());
     part_datas[1].push(PartData {
         joint_parrent_offset: Vec2::new(-40.0, -10.0),
         joint_offset: Vec2::new(0.0, -30.0), // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x - 40.0, entity_pos.y - 10.0, 0.0),
+        transform: Vec3::new(entity_pos.x, entity_pos.y + 20.0, 0.0),
         part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
     });
     part_datas[1].push(PartData {
         joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
         joint_offset: Vec2::new(0.0, -50.0),        // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x - 40.0, entity_pos.y - 10.0 - 40.0, 0.0),
+        transform: Vec3::new(entity_pos.x - 40.0, entity_pos.y - 10.0 + 80.0, 0.0),
         part_size: Vec2::new(10.0, 60.0),
     });
     part_datas.push(Vec::new());
     part_datas[2].push(PartData {
         joint_parrent_offset: Vec2::new(0.0, 10.0),
         joint_offset: Vec2::new(0.0, -30.0), // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x, entity_pos.y + 10.0, 0.0),
+        transform: Vec3::new(entity_pos.x, entity_pos.y + 20.0, 0.0),
         part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
     });
     part_datas[2].push(PartData {
         joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
         joint_offset: Vec2::new(0.0, -50.0),        // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x, entity_pos.y + 10.0 - 40.0, 0.0),
+        transform: Vec3::new(entity_pos.x, entity_pos.y + 20.0 + 80.0, 0.0),
         part_size: Vec2::new(10.0, 60.0),
     });
     part_datas.push(Vec::new());
     part_datas[3].push(PartData {
         joint_parrent_offset: Vec2::new(0.0, -10.0),
         joint_offset: Vec2::new(0.0, -30.0), // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x, entity_pos.y - 10.0, 0.0),
+        transform: Vec3::new(entity_pos.x, entity_pos.y + 20.0, 0.0),
         part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
     });
     part_datas[3].push(PartData {
         joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
         joint_offset: Vec2::new(0.0, -50.0),        // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x, entity_pos.y - 10.0 - 40.0, 0.0),
+        transform: Vec3::new(entity_pos.x, entity_pos.y + 80.0, 0.0),
         part_size: Vec2::new(10.0, 60.0),
     });
 
@@ -386,12 +382,9 @@ fn respawn_entity_system(
     mut parts: Query<&mut EntityParts>,
     // parts: ResMut<Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>>,
 ) {
-    if keys.just_pressed(KeyCode::R) {
-        println!("check 1");
+    if keys.pressed(KeyCode::R) {
         for parent_entity in &parent_entity {
-            println!("check 2");
             for part_data in &part_datas {
-                println!("check 3");
                 for mut parts in &mut parts {
                     println!("check 4");
                     construct_entity(
