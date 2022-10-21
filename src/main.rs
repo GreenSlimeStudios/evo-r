@@ -53,7 +53,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     commands.insert_resource(PhysicsHooksWithQueryResource(Box::new(
         SameUserDataFilter {},
     )));
-    let entity_pos: Vec3 = Vec3::new(0.0, 600.0, 0.0);
+    let entity_pos: Vec3 = Vec3::new(0.0, 300.0, 0.0);
 
     let parent_data: Parent = Parent {
         position: entity_pos,
@@ -84,53 +84,53 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     part_datas.push(Vec::new());
     part_datas[0].push(PartData {
         joint_parrent_offset: Vec2::new(40.0, 10.0),
-        joint_offset: Vec2::new(0.0, -30.0), // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x, entity_pos.y + 20.0, 0.0),
+        joint_offset: Vec2::new(0.0, -40.0), // y 10 lower than in part size y
+        transform: Vec3::new(entity_pos.x, entity_pos.y, 0.0),
         part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
     });
     part_datas[0].push(PartData {
         joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
-        joint_offset: Vec2::new(0.0, -50.0),        // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x + 40.0, entity_pos.y + 10.0 + 80.0, 0.0),
+        joint_offset: Vec2::new(0.0, -60.0),        // y 10 lower than in part size y
+        transform: Vec3::new(entity_pos.x + 40.0, entity_pos.y + 10.0 + 40.0, 0.0),
         part_size: Vec2::new(10.0, 60.0),
     });
     part_datas.push(Vec::new());
     part_datas[1].push(PartData {
         joint_parrent_offset: Vec2::new(-40.0, -10.0),
-        joint_offset: Vec2::new(0.0, -30.0), // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x, entity_pos.y + 20.0, 0.0),
+        joint_offset: Vec2::new(0.0, -40.0), // y 10 lower than in part size y
+        transform: Vec3::new(entity_pos.x, entity_pos.y, 0.0),
         part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
     });
     part_datas[1].push(PartData {
         joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
-        joint_offset: Vec2::new(0.0, -50.0),        // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x - 40.0, entity_pos.y - 10.0 + 80.0, 0.0),
+        joint_offset: Vec2::new(0.0, -60.0),        // y 10 lower than in part size y
+        transform: Vec3::new(entity_pos.x - 40.0, entity_pos.y - 10.0 + 40.0, 0.0),
         part_size: Vec2::new(10.0, 60.0),
     });
     part_datas.push(Vec::new());
     part_datas[2].push(PartData {
         joint_parrent_offset: Vec2::new(0.0, 10.0),
-        joint_offset: Vec2::new(0.0, -30.0), // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x, entity_pos.y + 20.0, 0.0),
+        joint_offset: Vec2::new(0.0, -40.0), // y 10 lower than in part size y
+        transform: Vec3::new(entity_pos.x, entity_pos.y, 0.0),
         part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
     });
     part_datas[2].push(PartData {
         joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
-        joint_offset: Vec2::new(0.0, -50.0),        // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x, entity_pos.y + 20.0 + 80.0, 0.0),
+        joint_offset: Vec2::new(0.0, -60.0),        // y 10 lower than in part size y
+        transform: Vec3::new(entity_pos.x, entity_pos.y + 10.0 + 40.0, 0.0),
         part_size: Vec2::new(10.0, 60.0),
     });
     part_datas.push(Vec::new());
     part_datas[3].push(PartData {
         joint_parrent_offset: Vec2::new(0.0, -10.0),
-        joint_offset: Vec2::new(0.0, -30.0), // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x, entity_pos.y + 20.0, 0.0),
+        joint_offset: Vec2::new(0.0, -40.0), // y 10 lower than in part size y
+        transform: Vec3::new(entity_pos.x, entity_pos.y, 0.0),
         part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
     });
     part_datas[3].push(PartData {
         joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
-        joint_offset: Vec2::new(0.0, -50.0),        // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x, entity_pos.y + 80.0, 0.0),
+        joint_offset: Vec2::new(0.0, -60.0),        // y 10 lower than in part size y
+        transform: Vec3::new(entity_pos.x, entity_pos.y - 10.0 + 40.0, 0.0),
         part_size: Vec2::new(10.0, 60.0),
     });
 
@@ -261,20 +261,17 @@ fn create_part(
             local: Transform::from_xyz(
                 part_data.transform.x + part_data.joint_parrent_offset.x,
                 // + part_data.part_size.x / 2.0,
-                part_data.transform.y + part_data.joint_parrent_offset.y,
+                part_data.transform.y + part_data.joint_parrent_offset.y + part_data.part_size.y,
                 // + part_data.part_size.y / 2.0,
                 part_data.transform.z,
             ),
             ..default()
         })
         .insert(Name::new("sussy"))
-        .insert(Velocity {
-            angvel: 0.01,
-            linvel: Vec2::new(1.0, 1.0),
-        })
+        .insert(Velocity::zero())
         .insert(Collider::cuboid(
             part_data.part_size.x,
-            part_data.part_size.y,
+            part_data.part_size.y + 10.0,
         ))
         .insert(RigidBody::Dynamic)
         .insert(Leg)
