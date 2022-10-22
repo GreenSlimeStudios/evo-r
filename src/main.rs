@@ -59,7 +59,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
 
     let parent_data: Parent = Parent {
         position: entity_pos,
-        size: Vec2::new(100.0, 30.0),
+        size: Vec2::new(250.0, 20.0),
     };
 
     let parent_entity = commands
@@ -214,7 +214,7 @@ fn toggle_gravity(
     mut reapier_config: ResMut<RapierConfiguration>,
     keys: Res<Input<KeyCode>>,
     mut parent: Query<(&mut Transform, &mut Velocity, &Parent), With<Parent>>,
-    // mut legs: Query<&mut Velocity, With<Leg>>,
+    mut legs: Query<&mut Velocity, Without<Parent>>,
 ) {
     if keys.just_pressed(KeyCode::G) {
         if reapier_config.gravity == Vec2::ZERO {
@@ -230,9 +230,9 @@ fn toggle_gravity(
             parent_velocity.angvel = 0.0;
             parent_velocity.linvel = Vec2::ZERO;
         }
-        // for mut velocity in &mut legs {
-        //     velocity.angvel = 0.0;
-        // }
+        for mut velocity in &mut legs {
+            velocity.angvel = 0.0;
+        }
     }
 }
 
@@ -318,9 +318,12 @@ fn create_part(
     let part_entity = commands
         .spawn_bundle(TransformBundle {
             local: Transform::from_xyz(
-                part_data.transform.x + part_data.joint_parrent_offset.x,
+                part_data.transform.x - part_data.joint_offset.x,
+                // + part_data.joint_parrent_offset.x / 2.0,
                 // + part_data.part_size.x / 2.0,
-                part_data.transform.y + part_data.joint_parrent_offset.y - part_data.part_size.y,
+                part_data.transform.y - part_data.joint_offset.y,
+                // + part_data.joint_parrent_offset.y / 2.0,
+                // - part_data.part_size.y,
                 // + part_data.part_size.y / 2.0,
                 part_data.transform.z,
             ),
