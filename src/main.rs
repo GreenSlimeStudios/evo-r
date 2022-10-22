@@ -1,6 +1,6 @@
 use bevy::{ecs::system::EntityCommands, prelude::*};
 use bevy_inspector_egui::WorldInspectorPlugin;
-use bevy_rapier2d::{parry::transformation::voxelization, prelude::*};
+use bevy_rapier2d::{na::ComplexField, parry::transformation::voxelization, prelude::*};
 
 fn main() {
     App::new()
@@ -31,7 +31,9 @@ fn setup_graphics(mut commands: Commands) {
 }
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
-pub struct Leg;
+pub struct Leg {
+    pub id: (usize, usize),
+}
 
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
@@ -173,6 +175,7 @@ fn create_part_data(
     parent_data: PartData,
     part_size: Vec2,
     joint_offset: Option<Vec2>,
+    id: (usize, usize),
 ) -> PartData {
     let joint_offset: Vec2 = match joint_offset {
         Some(offset) => offset,
@@ -180,6 +183,7 @@ fn create_part_data(
     };
 
     return PartData {
+        id,
         joint_offset,
         part_size,
         transform: Vec3::new(
@@ -214,7 +218,7 @@ fn toggle_gravity(
     mut reapier_config: ResMut<RapierConfiguration>,
     keys: Res<Input<KeyCode>>,
     mut parent: Query<(&mut Transform, &mut Velocity, &Parent), With<Parent>>,
-    mut legs: Query<&mut Velocity, Without<Parent>>,
+    mut legs: Query<(&mut Transform, &mut Velocity), Without<Parent>>,
 ) {
     if keys.just_pressed(KeyCode::G) {
         if reapier_config.gravity == Vec2::ZERO {
@@ -230,7 +234,8 @@ fn toggle_gravity(
             parent_velocity.angvel = 0.0;
             parent_velocity.linvel = Vec2::ZERO;
         }
-        for mut velocity in &mut legs {
+        for (mut transform, mut velocity) in &mut legs {
+            transform.rotation = Quat::from_rotation_y(0.0);
             velocity.angvel = 0.0;
         }
     }
@@ -287,6 +292,7 @@ pub struct PartData {
     joint_offset: Vec2,
     transform: Vec3,
     part_size: Vec2,
+    id: (usize, usize),
 }
 
 fn create_part(
@@ -327,7 +333,7 @@ fn create_part(
                 // + part_data.part_size.y / 2.0,
                 part_data.transform.z,
             ),
-            // .with_rotation(Quat::from_rotation_z(90.0)),
+            // .with_rotation(Quat::from_rotation_z(0.0)),
             ..default()
         })
         .insert(Name::new("sussy"))
@@ -337,7 +343,7 @@ fn create_part(
             part_data.part_size.y + 10.0,
         ))
         .insert(RigidBody::Dynamic)
-        .insert(Leg)
+        .insert(Leg { id: part_data.id })
         .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
         .insert(CustomFilterTag::GroupA)
         .id();
@@ -488,6 +494,7 @@ fn add_leg_system(
     parent: Query<(&Transform, Entity, &Parent)>,
     mut parts: Query<(&mut EntityData, &mut EntityParts)>,
     buttons: Res<Input<MouseButton>>,
+    legs: Query<(&Transform, &Leg)>,
 ) {
     let window = windows.get_primary().unwrap();
 
@@ -495,19 +502,21 @@ fn add_leg_system(
         // cursor is inside the window, position given
         let position = Vec2::new(
             _position.x - window.width() / 2.0,
-            _position.y - window.height() / 2.0,
+            _position.y - window.height() / 2.0 + 20.0,
         );
         // println!("{}", position);
         // for (tower, transform) in &targets {
         if buttons.just_pressed(MouseButton::Left) && reapier_config.gravity == Vec2::ZERO {
             for (mut entity_data, mut entity_parts) in &mut parts {
                 for (parent_transform, parent_entity, parent_data) in &parent {
-                    if Vec2::distance(to_vec2(&parent_data.position), position)
-                        < parent_data.size.x * 2.0
+                    if (position.x - parent_data.position.x).abs() < parent_data.size.x
+                        && (position.y - parent_data.position.y).abs() < parent_data.size.y
                     {
                         entity_data.data.push(Vec::new());
-                        let index: usize = entity_data.data.len() - 1;
-                        entity_data.data[index].push(PartData {
+                        let index1: usize = entity_data.data.len() - 1;
+                        let index2: usize = entity_data.data[index1].len();
+                        entity_data.data[index1].push(PartData {
+                            id: (index1, index2),
                             joint_parrent_offset: position - to_vec2(&parent_transform.translation),
                             joint_offset: Vec2::new(0.0, 40.0),
                             transform: Vec3::new(position.x, position.y, 0.0),
@@ -528,41 +537,3 @@ fn add_leg_system(
         // cursor is not inside the window
     }
 }
-
-// fn spawn_range_circle(
-//     // mut commands: Commands,
-//     windows: Res<Windows>,
-//     targets: Query<(&Tower, &GlobalTransform)>,
-//     mut range_meters: Query<(Entity, &mut Transform), With<RangeMeter>>,
-//     buttons: Res<Input<MouseButton>>,
-// ) {
-//     // Games typically only have one window (the primary window).
-//     // For multi-window applications, you need to use a specific window ID here.
-//     let window = windows.get_primary().unwrap();
-
-//     if let Some(_position) = window.cursor_position() {
-//         // cursor is inside the window, position given
-//         let position = Vec2::new(
-//             _position.x - window.width() / 2.0,
-//             _position.y - window.height() / 2.0,
-//         );
-//         // println!("{}", position);
-//         for (tower, transform) in &targets {
-//             if buttons.just_pressed(MouseButton::Left) {
-//                 for (entity, mut range_transform) in &mut range_meters {
-//                     if Vec2::distance(position, to_vec2(transform.translation())) < 20.0 {
-//                         range_transform.scale.x = tower.range * 2.0;
-//                         range_transform.scale.y = tower.range * 2.0;
-//                         range_transform.translation = transform.translation();
-//                         // commands.entity(entity).
-//                     } else {
-//                         range_transform.translation.x = 1000.0;
-//                     }
-//                     // println!("{:?}", tower);
-//                 }
-//             }
-//         }
-//     } else {
-//         // cursor is not inside the window
-//     }
-// }
