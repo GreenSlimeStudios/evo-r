@@ -1,6 +1,6 @@
 use bevy::{ecs::system::EntityCommands, prelude::*};
 use bevy_inspector_egui::WorldInspectorPlugin;
-use bevy_rapier2d::prelude::*;
+use bevy_rapier2d::{parry::transformation::voxelization, prelude::*};
 
 fn main() {
     App::new()
@@ -18,6 +18,8 @@ fn main() {
         .add_system(move_objects)
         .add_system(move_camera_system)
         .add_system(respawn_entity_system)
+        .add_system(toggle_gravity)
+        .add_system(add_leg_system)
         .run();
 }
 
@@ -53,11 +55,11 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     commands.insert_resource(PhysicsHooksWithQueryResource(Box::new(
         SameUserDataFilter {},
     )));
-    let entity_pos: Vec3 = Vec3::new(0.0, 300.0, 0.0);
+    let entity_pos: Vec3 = Vec3::new(0.0, 400.0, 0.0);
 
     let parent_data: Parent = Parent {
         position: entity_pos,
-        size: Vec2::new(60.0, 60.0),
+        size: Vec2::new(100.0, 30.0),
     };
 
     let parent_entity = commands
@@ -81,58 +83,65 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     let mut parts: Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>> =
         Vec::new();
 
-    part_datas.push(Vec::new());
-    part_datas[0].push(PartData {
-        joint_parrent_offset: Vec2::new(40.0, 10.0),
-        joint_offset: Vec2::new(0.0, -40.0), // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x, entity_pos.y, 0.0),
-        part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
-    });
-    part_datas[0].push(PartData {
-        joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
-        joint_offset: Vec2::new(0.0, -60.0),        // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x + 40.0, entity_pos.y + 10.0 + 40.0, 0.0),
-        part_size: Vec2::new(10.0, 60.0),
-    });
-    part_datas.push(Vec::new());
-    part_datas[1].push(PartData {
-        joint_parrent_offset: Vec2::new(-40.0, -10.0),
-        joint_offset: Vec2::new(0.0, -40.0), // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x, entity_pos.y, 0.0),
-        part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
-    });
-    part_datas[1].push(PartData {
-        joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
-        joint_offset: Vec2::new(0.0, -60.0),        // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x - 40.0, entity_pos.y - 10.0 + 40.0, 0.0),
-        part_size: Vec2::new(10.0, 60.0),
-    });
-    part_datas.push(Vec::new());
-    part_datas[2].push(PartData {
-        joint_parrent_offset: Vec2::new(0.0, 10.0),
-        joint_offset: Vec2::new(0.0, -40.0), // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x, entity_pos.y, 0.0),
-        part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
-    });
-    part_datas[2].push(PartData {
-        joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
-        joint_offset: Vec2::new(0.0, -60.0),        // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x, entity_pos.y + 10.0 + 40.0, 0.0),
-        part_size: Vec2::new(10.0, 60.0),
-    });
-    part_datas.push(Vec::new());
-    part_datas[3].push(PartData {
-        joint_parrent_offset: Vec2::new(0.0, -10.0),
-        joint_offset: Vec2::new(0.0, -40.0), // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x, entity_pos.y, 0.0),
-        part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
-    });
-    part_datas[3].push(PartData {
-        joint_parrent_offset: Vec2::new(0.0, 40.0), // y is the same as in the parent entity part size y
-        joint_offset: Vec2::new(0.0, -60.0),        // y 10 lower than in part size y
-        transform: Vec3::new(entity_pos.x, entity_pos.y - 10.0 + 40.0, 0.0),
-        part_size: Vec2::new(10.0, 60.0),
-    });
+    // part_datas.push(Vec::new());
+    // part_datas[0].push(PartData {
+    //     joint_parrent_offset: Vec2::new(40.0, 10.0),
+    //     joint_offset: Vec2::new(0.0, 40.0), // y 10 lower than in part size y
+    //     transform: Vec3::new(entity_pos.x, entity_pos.y, 0.0),
+    //     part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
+    // });
+
+    // let part_data: PartData = part_datas[0][0].clone();
+    // part_datas[0].push(
+    //     create_part_data(part_data, Vec2 { x: 10.0, y: 60.0 }, None),
+    //     // PartData {
+    //     //     joint_parrent_offset: Vec2::new(0.0, -40.0), // y is the same as in the parent entity part size y
+    //     //     joint_offset: Vec2::new(0.0, 60.0),          // y 10 lower than in part size y
+    //     //     transform: Vec3::new(entity_pos.x + 40.0, entity_pos.y + 10.0 - 40.0, 0.0),
+    //     //     part_size: Vec2::new(10.0, 60.0),
+    //     // },
+    // );
+    // let part_data: PartData = part_datas[0][1].clone();
+    // part_datas[0].push(create_part_data(part_data, Vec2 { x: 10.0, y: 30.0 }, None));
+    // part_datas.push(Vec::new());
+    // part_datas[1].push(PartData {
+    //     joint_parrent_offset: Vec2::new(-40.0, -10.0),
+    //     joint_offset: Vec2::new(0.0, 40.0), // y 10 lower than in part size y
+    //     transform: Vec3::new(entity_pos.x, entity_pos.y, 0.0),
+    //     part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
+    // });
+    // part_datas[1].push(PartData {
+    //     joint_parrent_offset: Vec2::new(0.0, -40.0), // y is the same as in the parent entity part size y
+    //     joint_offset: Vec2::new(0.0, 60.0),          // y 10 lower than in part size y
+    //     transform: Vec3::new(entity_pos.x - 40.0, entity_pos.y - 10.0 - 40.0, 0.0),
+    //     part_size: Vec2::new(10.0, 60.0),
+    // });
+    // part_datas.push(Vec::new());
+    // part_datas[2].push(PartData {
+    //     joint_parrent_offset: Vec2::new(0.0, 10.0),
+    //     joint_offset: Vec2::new(0.0, 40.0), // y 10 lower than in part size y
+    //     transform: Vec3::new(entity_pos.x, entity_pos.y, 0.0),
+    //     part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
+    // });
+    // part_datas[2].push(PartData {
+    //     joint_parrent_offset: Vec2::new(0.0, -40.0), // y is the same as in the parent entity part size y
+    //     joint_offset: Vec2::new(0.0, 60.0),          // y 10 lower than in part size y
+    //     transform: Vec3::new(entity_pos.x, entity_pos.y + 10.0 - 40.0, 0.0),
+    //     part_size: Vec2::new(10.0, 60.0),
+    // });
+    // part_datas.push(Vec::new());
+    // part_datas[3].push(PartData {
+    //     joint_parrent_offset: Vec2::new(0.0, -10.0),
+    //     joint_offset: Vec2::new(0.0, 40.0), // y 10 lower than in part size y
+    //     transform: Vec3::new(entity_pos.x, entity_pos.y, 0.0),
+    //     part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
+    // });
+    // part_datas[3].push(PartData {
+    //     joint_parrent_offset: Vec2::new(0.0, -40.0), // y is the same as in the parent entity part size y
+    //     joint_offset: Vec2::new(0.0, 60.0),          // y 10 lower than in part size y
+    //     transform: Vec3::new(entity_pos.x, entity_pos.y - 10.0 - 40.0, 0.0),
+    //     part_size: Vec2::new(10.0, 60.0),
+    // });
 
     construct_entity(
         &part_datas,
@@ -151,13 +160,37 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
         // .insert(ActiveHooks::FILTER_CONTACT_PAIRS);
         .insert(CustomFilterTag::GroupB);
 
-    reapier_config.gravity = Vec2::new(0.0, -250.0);
+    // reapier_config.gravity = Vec2::new(0.0, -250.0);
     // commands.insert_resource(part_datas);
     commands
         .spawn_bundle(TransformBundle::default())
         .insert(EntityData { data: part_datas })
-        .insert(EntityParts { parts: parts });
+        .insert(EntityParts { parts: parts })
+        .insert(Name::new("entity data"));
 }
+
+fn create_part_data(
+    parent_data: PartData,
+    part_size: Vec2,
+    joint_offset: Option<Vec2>,
+) -> PartData {
+    let joint_offset: Vec2 = match joint_offset {
+        Some(offset) => offset,
+        None => Vec2::new(0.0, part_size.y),
+    };
+
+    return PartData {
+        joint_offset,
+        part_size,
+        transform: Vec3::new(
+            parent_data.transform.x + parent_data.joint_parrent_offset.x,
+            parent_data.transform.y + parent_data.joint_parrent_offset.y - parent_data.part_size.y,
+            0.0,
+        ),
+        joint_parrent_offset: Vec2::new(0.0, -parent_data.part_size.y),
+    };
+}
+
 fn move_objects(mut objects: Query<&mut Velocity, With<Leg>>, keys: Res<Input<KeyCode>>) {
     for mut object in &mut objects {
         if keys.pressed(KeyCode::D) {
@@ -175,6 +208,31 @@ fn move_objects(mut objects: Query<&mut Velocity, With<Leg>>, keys: Res<Input<Ke
         if object.angvel < -50.0 {
             object.angvel = -50.0;
         }
+    }
+}
+fn toggle_gravity(
+    mut reapier_config: ResMut<RapierConfiguration>,
+    keys: Res<Input<KeyCode>>,
+    mut parent: Query<(&mut Transform, &mut Velocity, &Parent), With<Parent>>,
+    // mut legs: Query<&mut Velocity, With<Leg>>,
+) {
+    if keys.just_pressed(KeyCode::G) {
+        if reapier_config.gravity == Vec2::ZERO {
+            reapier_config.gravity = Vec2::new(0.0, -250.0);
+        } else {
+            reapier_config.gravity = Vec2::ZERO;
+        }
+    }
+    if reapier_config.gravity == Vec2::ZERO {
+        for (mut parent_transform, mut parent_velocity, parent_data) in &mut parent {
+            parent_transform.translation = parent_data.position;
+            parent_transform.rotation = Quat::from_rotation_y(0.0);
+            parent_velocity.angvel = 0.0;
+            parent_velocity.linvel = Vec2::ZERO;
+        }
+        // for mut velocity in &mut legs {
+        //     velocity.angvel = 0.0;
+        // }
     }
 }
 
@@ -223,6 +281,7 @@ fn move_camera_system(
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct PartData {
     joint_parrent_offset: Vec2,
     joint_offset: Vec2,
@@ -261,10 +320,11 @@ fn create_part(
             local: Transform::from_xyz(
                 part_data.transform.x + part_data.joint_parrent_offset.x,
                 // + part_data.part_size.x / 2.0,
-                part_data.transform.y + part_data.joint_parrent_offset.y + part_data.part_size.y,
+                part_data.transform.y + part_data.joint_parrent_offset.y - part_data.part_size.y,
                 // + part_data.part_size.y / 2.0,
                 part_data.transform.z,
             ),
+            // .with_rotation(Quat::from_rotation_z(90.0)),
             ..default()
         })
         .insert(Name::new("sussy"))
@@ -354,8 +414,8 @@ fn construct_entity(
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
 struct Parent {
-    position: Vec3,
-    size: Vec2,
+    pub position: Vec3,
+    pub size: Vec2,
 }
 
 #[derive(Component, Default, Reflect)]
@@ -383,7 +443,6 @@ fn respawn_entity_system(
         for parent_entity in &parent_entity {
             for part_data in &part_datas {
                 for mut parts in &mut parts {
-                    println!("check 4");
                     construct_entity(
                         &part_data.data,
                         &mut parts.parts,
@@ -418,3 +477,89 @@ fn spawn_parent(parent_data: &Parent, commands: &mut Commands) -> Entity {
         })
         .id()
 }
+
+fn add_leg_system(
+    reapier_config: Res<RapierConfiguration>,
+    windows: Res<Windows>,
+    mut commands: Commands,
+    parent: Query<(&Transform, Entity, &Parent)>,
+    mut parts: Query<(&mut EntityData, &mut EntityParts)>,
+    buttons: Res<Input<MouseButton>>,
+) {
+    let window = windows.get_primary().unwrap();
+
+    if let Some(_position) = window.cursor_position() {
+        // cursor is inside the window, position given
+        let position = Vec2::new(
+            _position.x - window.width() / 2.0,
+            _position.y - window.height() / 2.0,
+        );
+        // println!("{}", position);
+        // for (tower, transform) in &targets {
+        if buttons.just_pressed(MouseButton::Left) && reapier_config.gravity == Vec2::ZERO {
+            for (mut entity_data, mut entity_parts) in &mut parts {
+                for (parent_transform, parent_entity, parent_data) in &parent {
+                    if Vec2::distance(to_vec2(&parent_data.position), position)
+                        < parent_data.size.x * 2.0
+                    {
+                        entity_data.data.push(Vec::new());
+                        let index: usize = entity_data.data.len() - 1;
+                        entity_data.data[index].push(PartData {
+                            joint_parrent_offset: position - to_vec2(&parent_transform.translation),
+                            joint_offset: Vec2::new(0.0, 40.0),
+                            transform: Vec3::new(position.x, position.y, 0.0),
+                            part_size: Vec2::new(10.0, 40.0),
+                        });
+                        construct_entity(
+                            &entity_data.data,
+                            &mut entity_parts.parts,
+                            (parent_entity, &parent_data),
+                            &mut commands,
+                        );
+                        // ) })}
+                    }
+                }
+            }
+        }
+    } else {
+        // cursor is not inside the window
+    }
+}
+
+// fn spawn_range_circle(
+//     // mut commands: Commands,
+//     windows: Res<Windows>,
+//     targets: Query<(&Tower, &GlobalTransform)>,
+//     mut range_meters: Query<(Entity, &mut Transform), With<RangeMeter>>,
+//     buttons: Res<Input<MouseButton>>,
+// ) {
+//     // Games typically only have one window (the primary window).
+//     // For multi-window applications, you need to use a specific window ID here.
+//     let window = windows.get_primary().unwrap();
+
+//     if let Some(_position) = window.cursor_position() {
+//         // cursor is inside the window, position given
+//         let position = Vec2::new(
+//             _position.x - window.width() / 2.0,
+//             _position.y - window.height() / 2.0,
+//         );
+//         // println!("{}", position);
+//         for (tower, transform) in &targets {
+//             if buttons.just_pressed(MouseButton::Left) {
+//                 for (entity, mut range_transform) in &mut range_meters {
+//                     if Vec2::distance(position, to_vec2(transform.translation())) < 20.0 {
+//                         range_transform.scale.x = tower.range * 2.0;
+//                         range_transform.scale.y = tower.range * 2.0;
+//                         range_transform.translation = transform.translation();
+//                         // commands.entity(entity).
+//                     } else {
+//                         range_transform.translation.x = 1000.0;
+//                     }
+//                     // println!("{:?}", tower);
+//                 }
+//             }
+//         }
+//     } else {
+//         // cursor is not inside the window
+//     }
+// }
