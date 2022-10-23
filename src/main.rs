@@ -66,7 +66,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
 
     let parent_data: Parent = Parent {
         position: entity_pos,
-        size: Vec2::new(70.0, 30.0),
+        size: Vec2::new(200.0, 30.0),
     };
 
     let parent_entity = commands
@@ -151,6 +151,10 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     // });
 
     construct_entity(
+        &SelectedEntity {
+            parent: true,
+            parts: None,
+        },
         &part_datas,
         &mut parts,
         (parent_entity, &parent_data),
@@ -173,7 +177,19 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
         .spawn_bundle(TransformBundle::default())
         .insert(EntityData { data: part_datas })
         .insert(EntityParts { parts: parts })
+        .insert(SelectedEntity {
+            parent: false,
+            parts: None,
+        })
         .insert(Name::new("entity data"));
+}
+#[derive(Component, Default, Reflect)]
+#[reflect(Component)]
+pub struct SelectedEntity {
+    #[reflect(ignore)]
+    pub parent: bool,
+    #[reflect(ignore)]
+    pub parts: Option<Vec<(usize, usize)>>,
 }
 
 fn create_part_data(
@@ -303,6 +319,7 @@ pub struct PartData {
 fn create_part(
     part_data: &PartData,
     commands: &mut Commands,
+    is_part_selected: bool,
 ) -> (Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder) {
     let entity: Entity = commands
         .spawn_bundle(TransformBundle {
@@ -318,6 +335,13 @@ fn create_part(
         .insert(Collider::cuboid(5.0, 5.0))
         .insert(RigidBody::Dynamic)
         // .insert(Leg)
+        .insert(ColliderDebugColor {
+            0: if is_part_selected {
+                Color::rgb(255.0, 0.0, 0.0)
+            } else {
+                Color::rgb(1.0, 0.0, 1.0)
+            },
+        })
         .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
         .insert(CustomFilterTag::GroupA)
         .id();
@@ -347,6 +371,13 @@ fn create_part(
             part_data.part_size.x,
             part_data.part_size.y + 10.0,
         ))
+        .insert(ColliderDebugColor {
+            0: if is_part_selected {
+                Color::rgb(255.0, 0.0, 0.0)
+            } else {
+                Color::rgb(1.0, 0.0, 1.0)
+            },
+        })
         .insert(RigidBody::Dynamic)
         .insert(Leg { id: part_data.id })
         .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
@@ -388,18 +419,24 @@ fn delete_entities(
 }
 
 fn construct_entity(
+    entity_selector: &SelectedEntity,
     part_datas: &Vec<Vec<PartData>>,
     parts: &mut Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>,
     mut parent: (Entity, &Parent),
     commands: &mut Commands,
 ) {
     delete_entities(commands, parts, parent.0);
-    parent.0 = spawn_parent(parent.1, commands);
+    parent.0 = spawn_parent(parent.1, commands, entity_selector.parent);
 
     for i in 0..part_datas.len() {
         parts.push(Vec::new());
         for j in 0..part_datas[i].len() {
-            parts[i].push(create_part(&part_datas[i][j], commands));
+            let is_part_selected: bool = match &entity_selector.parts {
+                Some(v) => v.contains(&(i, j)),
+                None => false,
+            };
+
+            parts[i].push(create_part(&part_datas[i][j], commands, is_part_selected));
         }
     }
 
@@ -427,7 +464,7 @@ fn construct_entity(
 }
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
-struct Parent {
+pub struct Parent {
     pub position: Vec3,
     pub size: Vec2,
 }
@@ -446,6 +483,7 @@ pub struct EntityParts {
 }
 
 fn respawn_entity_system(
+    entity_selectors: Query<&SelectedEntity>,
     keys: Res<Input<KeyCode>>,
     mut commands: Commands,
     parent_entity: Query<(Entity, &Parent)>,
@@ -454,22 +492,25 @@ fn respawn_entity_system(
     // parts: ResMut<Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>>,
 ) {
     if keys.pressed(KeyCode::R) {
-        for parent_entity in &parent_entity {
-            for part_data in &part_datas {
-                for mut parts in &mut parts {
-                    construct_entity(
-                        &part_data.data,
-                        &mut parts.parts,
-                        parent_entity,
-                        &mut commands,
-                    );
+        for entity_selector in &entity_selectors {
+            for parent_entity in &parent_entity {
+                for part_data in &part_datas {
+                    for mut parts in &mut parts {
+                        construct_entity(
+                            entity_selector,
+                            &part_data.data,
+                            &mut parts.parts,
+                            parent_entity,
+                            &mut commands,
+                        );
+                    }
                 }
             }
         }
     }
 }
 
-fn spawn_parent(parent_data: &Parent, commands: &mut Commands) -> Entity {
+fn spawn_parent(parent_data: &Parent, commands: &mut Commands, is_parent_selected: bool) -> Entity {
     commands
         .spawn_bundle(TransformBundle {
             local: Transform::from_xyz(
@@ -485,6 +526,13 @@ fn spawn_parent(parent_data: &Parent, commands: &mut Commands) -> Entity {
         .insert(RigidBody::Dynamic)
         .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
         .insert(CustomFilterTag::GroupA)
+        .insert(ColliderDebugColor {
+            0: if is_parent_selected {
+                Color::rgb(255.0, 0.0, 0.0)
+            } else {
+                Color::rgb(1.0, 0.0, 1.0)
+            },
+        })
         .insert(Parent {
             size: parent_data.size,
             position: parent_data.position,
@@ -501,6 +549,7 @@ fn add_leg_system(
     buttons: Res<Input<MouseButton>>,
     legs: Query<(&GlobalTransform, &Leg)>,
     keys: Res<Input<KeyCode>>,
+    mut selected_entity: Query<&mut SelectedEntity>,
 ) {
     let window = windows.get_primary().unwrap();
 
@@ -515,93 +564,146 @@ fn add_leg_system(
         if keys.pressed(KeyCode::R) {
             return;
         }
-        if buttons.just_pressed(MouseButton::Left) && reapier_config.gravity == Vec2::ZERO {
-            for (mut entity_data, mut entity_parts) in &mut parts {
-                for (parent_transform, parent_entity, parent_data) in &parent {
-                    if (position.x - parent_transform.translation().x).abs() < parent_data.size.x
-                        && (position.y - parent_transform.translation().y).abs()
-                            < parent_data.size.y
-                    {
-                        entity_data.data.push(Vec::new());
-                        let index1: usize = entity_data.data.len() - 1;
-                        let index2: usize = entity_data.data[index1].len();
-                        entity_data.data[index1].push(PartData {
-                            id: (index1, index2),
-                            joint_parrent_offset: position
-                                - to_vec2(&parent_transform.translation()),
-                            joint_offset: Vec2::new(0.0, 40.0),
-                            transform: Vec3::new(position.x, position.y, 0.0),
-                            part_size: Vec2::new(10.0, 40.0),
-                        });
-                        construct_entity(
-                            &entity_data.data,
-                            &mut entity_parts.parts,
-                            (parent_entity, &parent_data),
-                            &mut commands,
-                        );
-                        break;
-                    } else {
-                        for (leg_trasform, leg) in &legs {
-                            let mut parent_leg_data = entity_data.data[leg.id.0]
-                                [entity_data.data[leg.id.0].len() - 1]
-                                .clone();
-                            if parent_leg_data.id.1 == 0 {
-                                parent_leg_data = PartData {
-                                    id: parent_leg_data.id,
-                                    joint_offset: parent_leg_data.joint_offset,
-                                    joint_parrent_offset: parent_leg_data.joint_parrent_offset,
-                                    part_size: parent_leg_data.part_size,
-                                    transform: Vec3::new(
-                                        (parent_leg_data.transform.x - parent_data.size.x)
-                                            / parent_data.size.x.abs()
-                                            + parent_data.position.x,
-                                        (parent_leg_data.transform.y - parent_data.size.y)
-                                            / parent_data.size.y.abs()
-                                            + parent_data.position.y
-                                            - parent_leg_data.part_size.y * 2.0,
-                                        0.0,
-                                    ),
-                                }
-                            };
-                            if (
-                                position.x
-                                    - leg_trasform.translation().x
-                                    - parent_leg_data.joint_offset.x
-                                // - parent_leg_data.joint_parrent_offset.x
-                            )
-                                .abs()
-                                < parent_leg_data.part_size.x
-                                && (position.y
-                                    - leg_trasform.translation().y
-                                    // - parent_leg_data.joint_parrent_offset.y
-                                    // - parent_leg_data.part_size.y
-                                    - parent_leg_data.joint_offset.y)
-                                    .abs()
-                                    < parent_leg_data.part_size.y
-                            {
-                                let index2: usize = entity_data.data[leg.id.0].len();
-                                entity_data.data[leg.id.0].push(
-                                    create_part_data(
-                                        parent_leg_data,
-                                        Vec2::new(10.0, 30.0),
-                                        None,
-                                        (leg.id.0, index2),
-                                    ), // PartData {
-                                       // id: (leg.id.0, index2),
-                                       // joint_parrent_offset: position
-                                       //     - to_vec2(&parent_transform.translation),
-                                       // joint_offset: Vec2::new(0.0, 40.0),
-                                       // transform: Vec3::new(position.x, position.y, 0.0),
-                                       // part_size: Vec2::new(10.0, 40.0),
-                                       // }
-                                );
+        if (buttons.just_pressed(MouseButton::Left) || buttons.just_pressed(MouseButton::Right))
+            && reapier_config.gravity == Vec2::ZERO
+        {
+            for mut entity_selector in &mut selected_entity {
+                for (mut entity_data, mut entity_parts) in &mut parts {
+                    for (parent_transform, parent_entity, parent_data) in &parent {
+                        if (position.x - parent_transform.translation().x).abs()
+                            < parent_data.size.x
+                            && (position.y - parent_transform.translation().y).abs()
+                                < parent_data.size.y
+                        {
+                            if buttons.just_pressed(MouseButton::Left) {
+                                entity_data.data.push(Vec::new());
+                                let index1: usize = entity_data.data.len() - 1;
+                                let index2: usize = entity_data.data[index1].len();
+                                entity_data.data[index1].push(PartData {
+                                    id: (index1, index2),
+                                    joint_parrent_offset: position
+                                        - to_vec2(&parent_transform.translation()),
+                                    joint_offset: Vec2::new(0.0, 40.0),
+                                    transform: Vec3::new(position.x, position.y, 0.0),
+                                    part_size: Vec2::new(10.0, 40.0),
+                                });
+                                entity_selector.parts = Some(vec![(index1, index2)]);
+                                entity_selector.parent = false;
                                 construct_entity(
+                                    &entity_selector,
                                     &entity_data.data,
                                     &mut entity_parts.parts,
                                     (parent_entity, &parent_data),
                                     &mut commands,
                                 );
-                                break;
+                            } else if buttons.just_pressed(MouseButton::Right) {
+                                entity_selector.parts = None;
+                                entity_selector.parent = true;
+                                construct_entity(
+                                    &entity_selector,
+                                    &entity_data.data,
+                                    &mut entity_parts.parts,
+                                    (parent_entity, &parent_data),
+                                    &mut commands,
+                                );
+                            }
+                            break;
+                        } else {
+                            for (leg_trasform, leg) in &legs {
+                                let mut parent_leg_data = entity_data.data[leg.id.0]
+                                    [entity_data.data[leg.id.0].len() - 1]
+                                    .clone();
+                                if parent_leg_data.id.1 == 0 {
+                                    parent_leg_data = PartData {
+                                        id: parent_leg_data.id,
+                                        joint_offset: parent_leg_data.joint_offset,
+                                        joint_parrent_offset: parent_leg_data.joint_parrent_offset,
+                                        part_size: parent_leg_data.part_size,
+                                        transform: Vec3::new(
+                                            (parent_leg_data.transform.x - parent_data.size.x)
+                                                / parent_data.size.x.abs()
+                                                + parent_data.position.x,
+                                            (parent_leg_data.transform.y - parent_data.size.y)
+                                                / parent_data.size.y.abs()
+                                                + parent_data.position.y
+                                                - parent_leg_data.part_size.y * 2.0,
+                                            0.0,
+                                        ),
+                                    }
+                                };
+                                if (
+                                    position.x
+                                        - leg_trasform.translation().x
+                                        - parent_leg_data.joint_offset.x
+                                    // - parent_leg_data.joint_parrent_offset.x
+                                )
+                                    .abs()
+                                    < parent_leg_data.part_size.x
+                                    && (position.y
+                                    - leg_trasform.translation().y
+                                    // - parent_leg_data.joint_parrent_offset.y
+                                    // - parent_leg_data.part_size.y
+                                    - parent_leg_data.joint_offset.y)
+                                        .abs()
+                                        < parent_leg_data.part_size.y
+                                {
+                                    if buttons.just_pressed(MouseButton::Left) {
+                                        let index2: usize = entity_data.data[leg.id.0].len();
+                                        entity_data.data[leg.id.0].push(
+                                            create_part_data(
+                                                parent_leg_data,
+                                                Vec2::new(10.0, 30.0),
+                                                None,
+                                                (leg.id.0, index2),
+                                            ), // PartData {
+                                               // id: (leg.id.0, index2),
+                                               // joint_parrent_offset: position
+                                               //     - to_vec2(&parent_transform.translation),
+                                               // joint_offset: Vec2::new(0.0, 40.0),
+                                               // transform: Vec3::new(position.x, position.y, 0.0),
+                                               // part_size: Vec2::new(10.0, 40.0),
+                                               // }
+                                        );
+                                        entity_selector.parent = false;
+                                        entity_selector.parts = Some(vec![(leg.id.0, index2)]);
+                                        construct_entity(
+                                            &entity_selector,
+                                            &entity_data.data,
+                                            &mut entity_parts.parts,
+                                            (parent_entity, &parent_data),
+                                            &mut commands,
+                                        );
+                                        break;
+                                    } else if buttons.just_pressed(MouseButton::Right) {
+                                        entity_selector.parent = false;
+                                        if keys.pressed(KeyCode::LControl) {
+                                            match &mut entity_selector.parts {
+                                                None => entity_selector.parts = Some(vec![leg.id]),
+                                                Some(vec) => vec.push(leg.id),
+                                            }
+                                        } else {
+                                            entity_selector.parts = Some(vec![(leg.id)])
+                                        }
+                                        construct_entity(
+                                            &entity_selector,
+                                            &entity_data.data,
+                                            &mut entity_parts.parts,
+                                            (parent_entity, &parent_data),
+                                            &mut commands,
+                                        );
+                                        break;
+                                    }
+                                    // entity_selector.parent = false;
+                                    // entity_selector.parts = None;
+                                    // construct_entity(
+                                    //     &entity_selector,
+                                    //     &entity_data.data,
+                                    //     &mut entity_parts.parts,
+                                    //     (parent_entity, &parent_data),
+                                    //     &mut commands,
+                                    // );
+                                    break;
+                                }
                             }
                         }
                     }
@@ -618,20 +720,24 @@ fn reset_entity(
     parents: Query<(Entity, &Parent)>,
     mut commands: Commands,
     keys: Res<Input<KeyCode>>,
+    entity_selectors: Query<&SelectedEntity>,
 ) {
     if keys.just_pressed(KeyCode::Q) == false {
         return;
     }
-    for parent in &parents {
-        for (mut part_data, mut parts) in &mut parts {
-            part_data.data.clear();
+    for entity_selector in &entity_selectors {
+        for parent in &parents {
+            for (mut part_data, mut parts) in &mut parts {
+                part_data.data.clear();
 
-            construct_entity(
-                &part_data.data,
-                &mut parts.parts,
-                (parent.0, &parent.1),
-                &mut commands,
-            );
+                construct_entity(
+                    entity_selector,
+                    &part_data.data,
+                    &mut parts.parts,
+                    (parent.0, &parent.1),
+                    &mut commands,
+                );
+            }
         }
     }
 }
