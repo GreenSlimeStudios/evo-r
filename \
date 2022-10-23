@@ -5,10 +5,6 @@ use bevy_rapier2d::{na::ComplexField, parry::transformation::voxelization, prelu
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(0.2, 0.2, 0.2)))
-        .insert_resource(WindowDescriptor {
-            title: "evo-r".to_string(),
-            ..default()
-        })
         .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
         // .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
@@ -65,7 +61,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
 
     let parent_data: Parent = Parent {
         position: entity_pos,
-        size: Vec2::new(40.0, 20.0),
+        size: Vec2::new(250.0, 20.0),
     };
 
     let parent_entity = commands
@@ -552,12 +548,8 @@ fn add_leg_system(
                                     part_size: parent_leg_data.part_size,
                                     transform: Vec3::new(
                                         (parent_leg_data.transform.x - parent_data.size.x)
-                                            / parent_data.size.x.abs()
-                                            + parent_data.position.x,
-                                        (parent_leg_data.transform.y - parent_data.size.y)
-                                            / parent_data.size.y.abs()
-                                            + parent_data.position.y
-                                            - parent_leg_data.part_size.y * 2.0,
+                                            / (parent_data.size.x).abs(),
+                                        parent_leg_data.transform.y,
                                         0.0,
                                     ),
                                 }
