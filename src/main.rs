@@ -22,8 +22,9 @@ fn main() {
         .add_system(move_objects)
         .add_system(move_camera_system)
         .add_system(respawn_entity_system)
-        .add_system(toggle_gravity)
         .add_system(add_leg_system)
+        .add_system(reset_entity)
+        .add_system(toggle_gravity)
         .run();
 }
 
@@ -61,11 +62,11 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     commands.insert_resource(PhysicsHooksWithQueryResource(Box::new(
         SameUserDataFilter {},
     )));
-    let entity_pos: Vec3 = Vec3::new(100.0, 400.0, 0.0);
+    let entity_pos: Vec3 = Vec3::new(0.0, 300.0, 0.0);
 
     let parent_data: Parent = Parent {
         position: entity_pos,
-        size: Vec2::new(40.0, 20.0),
+        size: Vec2::new(70.0, 30.0),
     };
 
     let parent_entity = commands
@@ -609,5 +610,28 @@ fn add_leg_system(
         }
     } else {
         // cursor is not inside the window
+    }
+}
+
+fn reset_entity(
+    mut parts: Query<(&mut EntityData, &mut EntityParts)>,
+    parents: Query<(Entity, &Parent)>,
+    mut commands: Commands,
+    keys: Res<Input<KeyCode>>,
+) {
+    if keys.just_pressed(KeyCode::Q) == false {
+        return;
+    }
+    for parent in &parents {
+        for (mut part_data, mut parts) in &mut parts {
+            part_data.data.clear();
+
+            construct_entity(
+                &part_data.data,
+                &mut parts.parts,
+                (parent.0, &parent.1),
+                &mut commands,
+            );
+        }
     }
 }
