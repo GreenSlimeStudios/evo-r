@@ -25,6 +25,7 @@ fn main() {
         .add_system(add_leg_system)
         .add_system(reset_entity)
         .add_system(toggle_gravity)
+        .add_system(edit_selected_parts_system)
         .run();
 }
 
@@ -155,7 +156,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
             parent: true,
             parts: None,
         },
-        &part_datas,
+        &mut part_datas,
         &mut parts,
         (parent_entity, &parent_data),
         &mut commands,
@@ -420,7 +421,7 @@ fn delete_entities(
 
 fn construct_entity(
     entity_selector: &SelectedEntity,
-    part_datas: &Vec<Vec<PartData>>,
+    mut part_datas: &mut Vec<Vec<PartData>>,
     parts: &mut Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>,
     mut parent: (Entity, &Parent),
     commands: &mut Commands,
@@ -435,6 +436,23 @@ fn construct_entity(
                 Some(v) => v.contains(&(i, j)),
                 None => false,
             };
+            let parent_leg_data: Option<PartData> = match j {
+                0 => None,
+                _ => Some(part_datas[i][j - 1].clone()),
+            };
+            match parent_leg_data {
+                None => (),
+                Some(data) => {
+                    let current_data: PartData = part_datas[i][j].clone();
+                    part_datas[i][j] = create_part_data(
+                        data,
+                        current_data.part_size,
+                        Some(current_data.joint_offset),
+                        current_data.id,
+                    );
+                    // PartData {
+                }
+            }
 
             parts[i].push(create_part(&part_datas[i][j], commands, is_part_selected));
         }
@@ -487,18 +505,18 @@ fn respawn_entity_system(
     keys: Res<Input<KeyCode>>,
     mut commands: Commands,
     parent_entity: Query<(Entity, &Parent)>,
-    part_datas: Query<&EntityData>,
+    mut part_datas: Query<&mut EntityData>,
     mut parts: Query<&mut EntityParts>,
     // parts: ResMut<Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>>,
 ) {
     if keys.pressed(KeyCode::R) {
         for entity_selector in &entity_selectors {
             for parent_entity in &parent_entity {
-                for part_data in &part_datas {
+                for mut part_data in &mut part_datas {
                     for mut parts in &mut parts {
                         construct_entity(
                             entity_selector,
-                            &part_data.data,
+                            &mut part_data.data,
                             &mut parts.parts,
                             parent_entity,
                             &mut commands,
@@ -591,7 +609,7 @@ fn add_leg_system(
                                 entity_selector.parent = false;
                                 construct_entity(
                                     &entity_selector,
-                                    &entity_data.data,
+                                    &mut entity_data.data,
                                     &mut entity_parts.parts,
                                     (parent_entity, &parent_data),
                                     &mut commands,
@@ -601,7 +619,7 @@ fn add_leg_system(
                                 entity_selector.parent = true;
                                 construct_entity(
                                     &entity_selector,
-                                    &entity_data.data,
+                                    &mut entity_data.data,
                                     &mut entity_parts.parts,
                                     (parent_entity, &parent_data),
                                     &mut commands,
@@ -668,7 +686,7 @@ fn add_leg_system(
                                         entity_selector.parts = Some(vec![(leg.id.0, index2)]);
                                         construct_entity(
                                             &entity_selector,
-                                            &entity_data.data,
+                                            &mut entity_data.data,
                                             &mut entity_parts.parts,
                                             (parent_entity, &parent_data),
                                             &mut commands,
@@ -686,7 +704,7 @@ fn add_leg_system(
                                         }
                                         construct_entity(
                                             &entity_selector,
-                                            &entity_data.data,
+                                            &mut entity_data.data,
                                             &mut entity_parts.parts,
                                             (parent_entity, &parent_data),
                                             &mut commands,
@@ -732,11 +750,64 @@ fn reset_entity(
 
                 construct_entity(
                     entity_selector,
-                    &part_data.data,
+                    &mut part_data.data,
                     &mut parts.parts,
                     (parent.0, &parent.1),
                     &mut commands,
                 );
+            }
+        }
+    }
+}
+
+fn edit_selected_parts_system(
+    mut commands: Commands,
+    mut parts: Query<(&mut EntityData, &mut EntityParts)>,
+    parents: Query<(Entity, &Parent)>,
+    keys: Res<Input<KeyCode>>,
+    entity_selectors: Query<&SelectedEntity>,
+) {
+    if keys.just_pressed(KeyCode::Down)
+        || keys.just_pressed(KeyCode::Up)
+        || keys.just_pressed(KeyCode::Left)
+        || keys.just_pressed(KeyCode::Right)
+    {
+        for entity_selector in &entity_selectors {
+            for (parent_entity, parent_data) in &parents {
+                for (mut part_data, mut parts) in &mut parts {
+                    for i in 0..part_data.data.len() {
+                        for j in 0..part_data.data[i].len() {
+                            match &entity_selector.parts {
+                                None => (),
+                                Some(v) => {
+                                    if v.contains(&(i, j)) {
+                                        if keys.just_pressed(KeyCode::Up) {
+                                            part_data.data[i][j].part_size.y += 10.0;
+                                            part_data.data[i][j].joint_offset.y += 10.0;
+                                        };
+                                        if keys.just_pressed(KeyCode::Down) {
+                                            part_data.data[i][j].part_size.y -= 10.0;
+                                            part_data.data[i][j].joint_offset.y -= 10.0;
+                                        };
+                                        if keys.just_pressed(KeyCode::Left) {
+                                            part_data.data[i][j].part_size.x -= 10.0;
+                                        };
+                                        if keys.just_pressed(KeyCode::Right) {
+                                            part_data.data[i][j].part_size.x += 10.0;
+                                        };
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    construct_entity(
+                        &entity_selector,
+                        &mut part_data.data,
+                        &mut parts.parts,
+                        (parent_entity, &parent_data),
+                        &mut commands,
+                    );
+                }
             }
         }
     }
