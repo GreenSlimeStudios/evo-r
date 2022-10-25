@@ -196,6 +196,7 @@ pub struct SelectedEntity {
 }
 
 fn create_part_data(
+    extra_joint_parent_offset: Vec2,
     parent_data: PartData,
     part_size: Vec2,
     joint_offset: Option<Vec2>,
@@ -207,6 +208,7 @@ fn create_part_data(
     };
 
     return PartData {
+        extra_joint_parent_offset,
         id,
         joint_offset,
         part_size,
@@ -215,7 +217,10 @@ fn create_part_data(
             parent_data.transform.y + parent_data.joint_parrent_offset.y - parent_data.part_size.y,
             0.0,
         ),
-        joint_parrent_offset: Vec2::new(0.0, -parent_data.part_size.y),
+        joint_parrent_offset: Vec2::new(
+            0.0 + extra_joint_parent_offset.x,
+            -parent_data.part_size.y + extra_joint_parent_offset.y,
+        ),
     };
 }
 
@@ -312,6 +317,7 @@ fn move_camera_system(
 
 #[derive(Clone, Copy)]
 pub struct PartData {
+    extra_joint_parent_offset: Vec2,
     joint_parrent_offset: Vec2,
     joint_offset: Vec2,
     transform: Vec3,
@@ -447,6 +453,7 @@ fn construct_entity(
                 Some(data) => {
                     let current_data: PartData = part_datas[i][j].clone();
                     part_datas[i][j] = create_part_data(
+                        current_data.extra_joint_parent_offset,
                         data,
                         current_data.part_size,
                         Some(current_data.joint_offset),
@@ -600,6 +607,7 @@ fn add_leg_system(
                                 let index1: usize = entity_data.data.len() - 1;
                                 let index2: usize = entity_data.data[index1].len();
                                 entity_data.data[index1].push(PartData {
+                                    extra_joint_parent_offset: Vec2::ZERO,
                                     id: (index1, index2),
                                     joint_parrent_offset: position
                                         - to_vec2(&parent_transform.translation()),
@@ -635,6 +643,7 @@ fn add_leg_system(
                                     .clone();
                                 if parent_leg_data.id.1 == 0 {
                                     parent_leg_data = PartData {
+                                        extra_joint_parent_offset: Vec2::ZERO,
                                         id: parent_leg_data.id,
                                         joint_offset: parent_leg_data.joint_offset,
                                         joint_parrent_offset: parent_leg_data.joint_parrent_offset,
@@ -671,6 +680,7 @@ fn add_leg_system(
                                         let index2: usize = entity_data.data[leg.id.0].len();
                                         entity_data.data[leg.id.0].push(
                                             create_part_data(
+                                                Vec2::ZERO,
                                                 parent_leg_data,
                                                 Vec2::new(10.0, 30.0),
                                                 None,
@@ -800,7 +810,10 @@ fn edit_selected_parts_system(
                                     if v.contains(&(i, j)) {
                                         if keys.just_pressed(KeyCode::Up) {
                                             if keys.pressed(KeyCode::LControl) {
-                                                part_data.data[i][j].joint_parrent_offset.y += 10.0;
+                                                part_data.data[i][j].extra_joint_parent_offset.y +=
+                                                    10.0;
+                                            } else if keys.pressed(KeyCode::LAlt) {
+                                                part_data.data[i][j].joint_offset.y += 10.0;
                                             } else {
                                                 part_data.data[i][j].part_size.y += 10.0;
                                                 part_data.data[i][j].joint_offset.y += 10.0;
@@ -808,7 +821,10 @@ fn edit_selected_parts_system(
                                         };
                                         if keys.just_pressed(KeyCode::Down) {
                                             if keys.pressed(KeyCode::LControl) {
-                                                part_data.data[i][j].joint_parrent_offset.y -= 10.0;
+                                                part_data.data[i][j].extra_joint_parent_offset.y -=
+                                                    10.0;
+                                            } else if keys.pressed(KeyCode::LAlt) {
+                                                part_data.data[i][j].joint_offset.y -= 10.0;
                                             } else {
                                                 part_data.data[i][j].part_size.y -= 10.0;
                                                 part_data.data[i][j].joint_offset.y -= 10.0;
@@ -816,14 +832,20 @@ fn edit_selected_parts_system(
                                         };
                                         if keys.just_pressed(KeyCode::Left) {
                                             if keys.pressed(KeyCode::LControl) {
-                                                part_data.data[i][j].joint_parrent_offset.x -= 10.0;
+                                                part_data.data[i][j].extra_joint_parent_offset.x -=
+                                                    10.0;
+                                            } else if keys.pressed(KeyCode::LAlt) {
+                                                part_data.data[i][j].joint_offset.x -= 10.0;
                                             } else {
                                                 part_data.data[i][j].part_size.x -= 10.0;
                                             }
                                         };
                                         if keys.just_pressed(KeyCode::Right) {
                                             if keys.pressed(KeyCode::LControl) {
-                                                part_data.data[i][j].joint_parrent_offset.x += 10.0;
+                                                part_data.data[i][j].extra_joint_parent_offset.x +=
+                                                    10.0;
+                                            } else if keys.pressed(KeyCode::LAlt) {
+                                                part_data.data[i][j].joint_offset.x += 10.0;
                                             } else {
                                                 part_data.data[i][j].part_size.x += 10.0;
                                             }
