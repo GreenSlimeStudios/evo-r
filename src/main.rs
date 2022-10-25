@@ -1,3 +1,5 @@
+use std::ops::Index;
+
 use bevy::{ecs::system::EntityCommands, prelude::*};
 use bevy_inspector_egui::WorldInspectorPlugin;
 use bevy_rapier2d::{na::ComplexField, parry::transformation::voxelization, prelude::*};
@@ -696,8 +698,23 @@ fn add_leg_system(
                                         entity_selector.parent = false;
                                         if keys.pressed(KeyCode::LControl) {
                                             match &mut entity_selector.parts {
-                                                None => entity_selector.parts = Some(vec![leg.id]),
-                                                Some(vec) => vec.push(leg.id),
+                                                None => {
+                                                    entity_selector.parts = Some(vec![leg.id]);
+                                                }
+                                                Some(vec) => {
+                                                    if vec.contains(&leg.id) {
+                                                        let mut index: usize = 0;
+                                                        for k in 0..vec.len() {
+                                                            if vec[k] == leg.id {
+                                                                index = k;
+                                                                break;
+                                                            }
+                                                        }
+                                                        vec.remove(index);
+                                                    } else {
+                                                        vec.push(leg.id);
+                                                    }
+                                                }
                                             }
                                         } else {
                                             entity_selector.parts = Some(vec![(leg.id)])
@@ -782,18 +799,34 @@ fn edit_selected_parts_system(
                                 Some(v) => {
                                     if v.contains(&(i, j)) {
                                         if keys.just_pressed(KeyCode::Up) {
-                                            part_data.data[i][j].part_size.y += 10.0;
-                                            part_data.data[i][j].joint_offset.y += 10.0;
+                                            if keys.pressed(KeyCode::LControl) {
+                                                part_data.data[i][j].joint_parrent_offset.y += 10.0;
+                                            } else {
+                                                part_data.data[i][j].part_size.y += 10.0;
+                                                part_data.data[i][j].joint_offset.y += 10.0;
+                                            }
                                         };
                                         if keys.just_pressed(KeyCode::Down) {
-                                            part_data.data[i][j].part_size.y -= 10.0;
-                                            part_data.data[i][j].joint_offset.y -= 10.0;
+                                            if keys.pressed(KeyCode::LControl) {
+                                                part_data.data[i][j].joint_parrent_offset.y -= 10.0;
+                                            } else {
+                                                part_data.data[i][j].part_size.y -= 10.0;
+                                                part_data.data[i][j].joint_offset.y -= 10.0;
+                                            }
                                         };
                                         if keys.just_pressed(KeyCode::Left) {
-                                            part_data.data[i][j].part_size.x -= 10.0;
+                                            if keys.pressed(KeyCode::LControl) {
+                                                part_data.data[i][j].joint_parrent_offset.x -= 10.0;
+                                            } else {
+                                                part_data.data[i][j].part_size.x -= 10.0;
+                                            }
                                         };
                                         if keys.just_pressed(KeyCode::Right) {
-                                            part_data.data[i][j].part_size.x += 10.0;
+                                            if keys.pressed(KeyCode::LControl) {
+                                                part_data.data[i][j].joint_parrent_offset.x += 10.0;
+                                            } else {
+                                                part_data.data[i][j].part_size.x += 10.0;
+                                            }
                                         };
                                     }
                                 }
