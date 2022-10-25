@@ -790,7 +790,7 @@ fn reset_entity(
 fn edit_selected_parts_system(
     mut commands: Commands,
     mut parts: Query<(&mut EntityData, &mut EntityParts)>,
-    parents: Query<(Entity, &Parent)>,
+    mut parents: Query<(Entity, &mut Parent)>,
     keys: Res<Input<KeyCode>>,
     entity_selectors: Query<&SelectedEntity>,
 ) {
@@ -800,8 +800,23 @@ fn edit_selected_parts_system(
         || keys.just_pressed(KeyCode::Right)
     {
         for entity_selector in &entity_selectors {
-            for (parent_entity, parent_data) in &parents {
+            for (parent_entity, mut parent_data) in &mut parents {
                 for (mut part_data, mut parts) in &mut parts {
+                    if entity_selector.parent {
+                        if keys.just_pressed(KeyCode::Left) {
+                            parent_data.size.x -= 10.0;
+                        }
+                        if keys.just_pressed(KeyCode::Right) {
+                            parent_data.size.x += 10.0;
+                        }
+                        if keys.just_pressed(KeyCode::Up) {
+                            parent_data.size.y += 10.0;
+                        }
+                        if keys.just_pressed(KeyCode::Down) {
+                            parent_data.size.y -= 10.0;
+                        }
+                    }
+
                     for i in 0..part_data.data.len() {
                         for j in 0..part_data.data[i].len() {
                             match &entity_selector.parts {
