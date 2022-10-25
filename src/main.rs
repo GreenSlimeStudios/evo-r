@@ -69,7 +69,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
 
     let parent_data: Parent = Parent {
         position: entity_pos,
-        size: Vec2::new(200.0, 30.0),
+        size: Vec2::new(100.0, 30.0),
     };
 
     let parent_entity = commands
@@ -802,19 +802,40 @@ fn edit_selected_parts_system(
         for entity_selector in &entity_selectors {
             for (parent_entity, mut parent_data) in &mut parents {
                 for (mut part_data, mut parts) in &mut parts {
-                    if entity_selector.parent {
+                    if entity_selector.parent == true {
                         if keys.just_pressed(KeyCode::Left) {
-                            parent_data.size.x -= 10.0;
+                            if keys.pressed(KeyCode::LControl) {
+                                parent_data.position.x -= 10.0;
+                                change_pos(&mut part_data, Vec2::new(-10.0, 0.0));
+                            } else {
+                                parent_data.size.x -= 10.0;
+                            }
                         }
                         if keys.just_pressed(KeyCode::Right) {
-                            parent_data.size.x += 10.0;
+                            if keys.pressed(KeyCode::LControl) {
+                                parent_data.position.x += 10.0;
+                                change_pos(&mut part_data, Vec2::new(10.0, 0.0));
+                            } else {
+                                parent_data.size.x += 10.0;
+                            }
                         }
                         if keys.just_pressed(KeyCode::Up) {
-                            parent_data.size.y += 10.0;
+                            if keys.pressed(KeyCode::LControl) {
+                                parent_data.position.y += 10.0;
+                                change_pos(&mut part_data, Vec2::new(0.0, 10.0));
+                            } else {
+                                parent_data.size.y += 10.0;
+                            }
                         }
                         if keys.just_pressed(KeyCode::Down) {
-                            parent_data.size.y -= 10.0;
+                            if keys.pressed(KeyCode::LControl) {
+                                parent_data.position.y -= 10.0;
+                                change_pos(&mut part_data, Vec2::new(0.0, -10.0));
+                            } else {
+                                parent_data.size.y -= 10.0;
+                            }
                         }
+                        // break;
                     }
 
                     for i in 0..part_data.data.len() {
@@ -909,6 +930,15 @@ fn edit_selected_parts_system(
                     );
                 }
             }
+        }
+    }
+}
+
+fn change_pos(part_data: &mut EntityData, pos_offset: Vec2) {
+    for i in 0..part_data.data.len() {
+        for j in 0..part_data.data[i].len() {
+            part_data.data[i][j].transform.x += pos_offset.x;
+            part_data.data[i][j].transform.y += pos_offset.y;
         }
     }
 }
