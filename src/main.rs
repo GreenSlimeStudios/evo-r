@@ -810,8 +810,14 @@ fn edit_selected_parts_system(
                                     if v.contains(&(i, j)) {
                                         if keys.just_pressed(KeyCode::Up) {
                                             if keys.pressed(KeyCode::LControl) {
-                                                part_data.data[i][j].extra_joint_parent_offset.y +=
-                                                    10.0;
+                                                if j == 0 {
+                                                    part_data.data[i][j].joint_parrent_offset.y +=
+                                                        10.0;
+                                                } else {
+                                                    part_data.data[i][j]
+                                                        .extra_joint_parent_offset
+                                                        .y += 10.0;
+                                                }
                                             } else if keys.pressed(KeyCode::LAlt) {
                                                 part_data.data[i][j].joint_offset.y += 10.0;
                                             } else {
@@ -821,8 +827,16 @@ fn edit_selected_parts_system(
                                         };
                                         if keys.just_pressed(KeyCode::Down) {
                                             if keys.pressed(KeyCode::LControl) {
-                                                part_data.data[i][j].extra_joint_parent_offset.y -=
-                                                    10.0;
+                                                if j == 0 {
+                                                    part_data.data[i][j].joint_parrent_offset.y -=
+                                                        10.0;
+                                                } else {
+                                                    part_data.data[i][j]
+                                                        .extra_joint_parent_offset
+                                                        .y -= 10.0;
+                                                }
+                                                // part_data.data[i][j].extra_joint_parent_offset.y -=
+                                                //     10.0;
                                             } else if keys.pressed(KeyCode::LAlt) {
                                                 part_data.data[i][j].joint_offset.y -= 10.0;
                                             } else {
@@ -832,8 +846,16 @@ fn edit_selected_parts_system(
                                         };
                                         if keys.just_pressed(KeyCode::Left) {
                                             if keys.pressed(KeyCode::LControl) {
-                                                part_data.data[i][j].extra_joint_parent_offset.x -=
-                                                    10.0;
+                                                if j == 0 {
+                                                    part_data.data[i][j].joint_parrent_offset.x -=
+                                                        10.0;
+                                                } else {
+                                                    part_data.data[i][j]
+                                                        .extra_joint_parent_offset
+                                                        .x -= 10.0;
+                                                }
+                                                // part_data.data[i][j].extra_joint_parent_offset.x -=
+                                                //     10.0;
                                             } else if keys.pressed(KeyCode::LAlt) {
                                                 part_data.data[i][j].joint_offset.x -= 10.0;
                                             } else {
@@ -842,8 +864,16 @@ fn edit_selected_parts_system(
                                         };
                                         if keys.just_pressed(KeyCode::Right) {
                                             if keys.pressed(KeyCode::LControl) {
-                                                part_data.data[i][j].extra_joint_parent_offset.x +=
-                                                    10.0;
+                                                if j == 0 {
+                                                    part_data.data[i][j].joint_parrent_offset.x +=
+                                                        10.0;
+                                                } else {
+                                                    part_data.data[i][j]
+                                                        .extra_joint_parent_offset
+                                                        .x += 10.0;
+                                                }
+                                                // part_data.data[i][j].extra_joint_parent_offset.x +=
+                                                //     10.0;
                                             } else if keys.pressed(KeyCode::LAlt) {
                                                 part_data.data[i][j].joint_offset.x += 10.0;
                                             } else {
