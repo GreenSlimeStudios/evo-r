@@ -196,6 +196,7 @@ pub struct SelectedEntity {
 }
 
 fn create_part_data(
+    parent_id: (usize, usize),
     extra_joint_parent_offset: Vec2,
     parent_data: PartData,
     part_size: Vec2,
@@ -208,6 +209,7 @@ fn create_part_data(
     };
 
     return PartData {
+        parent_id,
         extra_joint_parent_offset,
         id,
         joint_offset,
@@ -317,6 +319,7 @@ fn move_camera_system(
 
 #[derive(Clone, Copy)]
 pub struct PartData {
+    parent_id: (usize, usize),
     extra_joint_parent_offset: Vec2,
     joint_parrent_offset: Vec2,
     joint_offset: Vec2,
@@ -444,15 +447,16 @@ fn construct_entity(
                 Some(v) => v.contains(&(i, j)),
                 None => false,
             };
+            let current_data: PartData = part_datas[i][j].clone();
             let parent_leg_data: Option<PartData> = match j {
                 0 => None,
-                _ => Some(part_datas[i][j - 1].clone()),
+                _ => Some(part_datas[current_data.parent_id.0][current_data.parent_id.1].clone()),
             };
             match parent_leg_data {
                 None => (),
                 Some(data) => {
-                    let current_data: PartData = part_datas[i][j].clone();
                     part_datas[i][j] = create_part_data(
+                        current_data.parent_id,
                         current_data.extra_joint_parent_offset,
                         data,
                         current_data.part_size,
@@ -468,7 +472,7 @@ fn construct_entity(
     }
 
     for i in 0..parts.len() {
-        parts[i].reverse();
+        // parts[i].reverse();
         for j in 0..parts[i].len() {
             commands.entity(parts[i][j].0).with_children(|cmd| {
                 cmd.spawn()
@@ -476,8 +480,10 @@ fn construct_entity(
             });
 
             commands
-                .entity(if j + 1 != parts[i].len() {
-                    parts[i][j + 1].2
+                .entity(if part_datas[i][j].id.1 != 0 {
+                    // if j + 1 != parts[i].len() {
+                    //     parts[i][j + 1].2
+                    parts[part_datas[i][j].parent_id.0][part_datas[i][j].parent_id.1].2
                 } else {
                     parent.0
                 })
@@ -486,7 +492,7 @@ fn construct_entity(
                         .insert(ImpulseJoint::new(parts[i][j].0, parts[i][j].1));
                 });
         }
-        parts[i].reverse();
+        // parts[i].reverse();
     }
 }
 #[derive(Component, Default, Reflect)]
@@ -607,6 +613,7 @@ fn add_leg_system(
                                 let index1: usize = entity_data.data.len() - 1;
                                 let index2: usize = entity_data.data[index1].len();
                                 entity_data.data[index1].push(PartData {
+                                    parent_id: (0, 0),
                                     extra_joint_parent_offset: Vec2::ZERO,
                                     id: (index1, index2),
                                     joint_parrent_offset: position
@@ -638,11 +645,11 @@ fn add_leg_system(
                             break;
                         } else {
                             for (leg_trasform, leg) in &legs {
-                                let mut parent_leg_data = entity_data.data[leg.id.0]
-                                    [entity_data.data[leg.id.0].len() - 1]
-                                    .clone();
+                                let mut parent_leg_data =
+                                    entity_data.data[leg.id.0][leg.id.1].clone();
                                 if parent_leg_data.id.1 == 0 {
                                     parent_leg_data = PartData {
+                                        parent_id: (0, 0),
                                         extra_joint_parent_offset: Vec2::ZERO,
                                         id: parent_leg_data.id,
                                         joint_offset: parent_leg_data.joint_offset,
@@ -680,6 +687,7 @@ fn add_leg_system(
                                         let index2: usize = entity_data.data[leg.id.0].len();
                                         entity_data.data[leg.id.0].push(
                                             create_part_data(
+                                                parent_leg_data.id,
                                                 Vec2::ZERO,
                                                 parent_leg_data,
                                                 Vec2::new(10.0, 30.0),
