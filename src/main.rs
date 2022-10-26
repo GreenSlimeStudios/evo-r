@@ -1,8 +1,10 @@
+mod entity_selection;
 use std::ops::Index;
 
 use bevy::{ecs::system::EntityCommands, prelude::*};
 use bevy_inspector_egui::WorldInspectorPlugin;
 use bevy_rapier2d::{na::ComplexField, parry::transformation::voxelization, prelude::*};
+use entity_selection::*;
 
 fn main() {
     App::new()
@@ -19,6 +21,7 @@ fn main() {
             100.0,
         ))
         .add_plugin(WorldInspectorPlugin::default())
+        .add_plugin(PartSelectionPlugin)
         .add_startup_system(setup_graphics)
         .add_startup_system(setup_physics)
         .add_system(move_objects)
@@ -27,7 +30,7 @@ fn main() {
         .add_system(add_leg_system)
         .add_system(reset_entity)
         .add_system(toggle_gravity)
-        .add_system(edit_selected_parts_system)
+        // .add_system(edit_selected_parts_system)
         .run();
 }
 
@@ -67,7 +70,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     )));
     let entity_pos: Vec3 = Vec3::new(0.0, 300.0, 0.0);
 
-    let parent_data: Parent = Parent {
+    let parent_data: ParentData = ParentData {
         position: entity_pos,
         size: Vec2::new(100.0, 30.0),
     };
@@ -83,7 +86,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
         .insert(RigidBody::Dynamic)
         .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
         .insert(CustomFilterTag::GroupA)
-        .insert(Parent {
+        .insert(ParentData {
             size: parent_data.size,
             position: parent_data.position,
         })
@@ -186,14 +189,6 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
         })
         .insert(Name::new("entity data"));
 }
-#[derive(Component, Default, Reflect)]
-#[reflect(Component)]
-pub struct SelectedEntity {
-    #[reflect(ignore)]
-    pub parent: bool,
-    #[reflect(ignore)]
-    pub parts: Option<Vec<(usize, usize)>>,
-}
 
 fn create_part_data(
     parent_id: (usize, usize),
@@ -248,8 +243,8 @@ fn move_objects(mut objects: Query<&mut Velocity, With<Leg>>, keys: Res<Input<Ke
 fn toggle_gravity(
     mut reapier_config: ResMut<RapierConfiguration>,
     keys: Res<Input<KeyCode>>,
-    mut parent: Query<(&mut Transform, &mut Velocity, &Parent), With<Parent>>,
-    mut legs: Query<(&mut Transform, &mut Velocity), Without<Parent>>,
+    mut parent: Query<(&mut Transform, &mut Velocity, &ParentData), With<ParentData>>,
+    mut legs: Query<(&mut Transform, &mut Velocity), Without<ParentData>>,
 ) {
     if keys.just_pressed(KeyCode::G) {
         if reapier_config.gravity == Vec2::ZERO {
@@ -434,7 +429,7 @@ fn construct_entity(
     entity_selector: &SelectedEntity,
     mut part_datas: &mut Vec<Vec<PartData>>,
     parts: &mut Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>,
-    mut parent: (Entity, &Parent),
+    mut parent: (Entity, &ParentData),
     commands: &mut Commands,
 ) {
     delete_entities(commands, parts, parent.0);
@@ -497,7 +492,7 @@ fn construct_entity(
 }
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
-pub struct Parent {
+pub struct ParentData {
     pub position: Vec3,
     pub size: Vec2,
 }
@@ -519,7 +514,7 @@ fn respawn_entity_system(
     entity_selectors: Query<&SelectedEntity>,
     keys: Res<Input<KeyCode>>,
     mut commands: Commands,
-    parent_entity: Query<(Entity, &Parent)>,
+    parent_entity: Query<(Entity, &ParentData)>,
     mut part_datas: Query<&mut EntityData>,
     mut parts: Query<&mut EntityParts>,
     // parts: ResMut<Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>>,
@@ -543,7 +538,11 @@ fn respawn_entity_system(
     }
 }
 
-fn spawn_parent(parent_data: &Parent, commands: &mut Commands, is_parent_selected: bool) -> Entity {
+fn spawn_parent(
+    parent_data: &ParentData,
+    commands: &mut Commands,
+    is_parent_selected: bool,
+) -> Entity {
     commands
         .spawn_bundle(TransformBundle {
             local: Transform::from_xyz(
@@ -566,7 +565,7 @@ fn spawn_parent(parent_data: &Parent, commands: &mut Commands, is_parent_selecte
                 Color::rgb(1.0, 0.0, 1.0)
             },
         })
-        .insert(Parent {
+        .insert(ParentData {
             size: parent_data.size,
             position: parent_data.position,
         })
@@ -577,7 +576,7 @@ fn add_leg_system(
     reapier_config: Res<RapierConfiguration>,
     windows: Res<Windows>,
     mut commands: Commands,
-    parent: Query<(&GlobalTransform, Entity, &Parent)>,
+    parent: Query<(&GlobalTransform, Entity, &ParentData)>,
     mut parts: Query<(&mut EntityData, &mut EntityParts)>,
     buttons: Res<Input<MouseButton>>,
     legs: Query<(&GlobalTransform, &Leg)>,
@@ -770,7 +769,7 @@ fn add_leg_system(
 
 fn reset_entity(
     mut parts: Query<(&mut EntityData, &mut EntityParts)>,
-    parents: Query<(Entity, &Parent)>,
+    parents: Query<(Entity, &ParentData)>,
     mut commands: Commands,
     keys: Res<Input<KeyCode>>,
     entity_selectors: Query<&SelectedEntity>,
@@ -791,162 +790,6 @@ fn reset_entity(
                     &mut commands,
                 );
             }
-        }
-    }
-}
-
-fn edit_selected_parts_system(
-    mut commands: Commands,
-    mut parts: Query<(&mut EntityData, &mut EntityParts)>,
-    mut parents: Query<(Entity, &mut Parent)>,
-    keys: Res<Input<KeyCode>>,
-    entity_selectors: Query<&SelectedEntity>,
-) {
-    if keys.just_pressed(KeyCode::Down)
-        || keys.just_pressed(KeyCode::Up)
-        || keys.just_pressed(KeyCode::Left)
-        || keys.just_pressed(KeyCode::Right)
-    {
-        for entity_selector in &entity_selectors {
-            for (parent_entity, mut parent_data) in &mut parents {
-                for (mut part_data, mut parts) in &mut parts {
-                    if entity_selector.parent == true {
-                        if keys.just_pressed(KeyCode::Left) {
-                            if keys.pressed(KeyCode::LControl) {
-                                parent_data.position.x -= 10.0;
-                                change_pos(&mut part_data, Vec2::new(-10.0, 0.0));
-                            } else {
-                                parent_data.size.x -= 10.0;
-                            }
-                        }
-                        if keys.just_pressed(KeyCode::Right) {
-                            if keys.pressed(KeyCode::LControl) {
-                                parent_data.position.x += 10.0;
-                                change_pos(&mut part_data, Vec2::new(10.0, 0.0));
-                            } else {
-                                parent_data.size.x += 10.0;
-                            }
-                        }
-                        if keys.just_pressed(KeyCode::Up) {
-                            if keys.pressed(KeyCode::LControl) {
-                                parent_data.position.y += 10.0;
-                                change_pos(&mut part_data, Vec2::new(0.0, 10.0));
-                            } else {
-                                parent_data.size.y += 10.0;
-                            }
-                        }
-                        if keys.just_pressed(KeyCode::Down) {
-                            if keys.pressed(KeyCode::LControl) {
-                                parent_data.position.y -= 10.0;
-                                change_pos(&mut part_data, Vec2::new(0.0, -10.0));
-                            } else {
-                                parent_data.size.y -= 10.0;
-                            }
-                        }
-                        // break;
-                    }
-
-                    for i in 0..part_data.data.len() {
-                        for j in 0..part_data.data[i].len() {
-                            match &entity_selector.parts {
-                                None => (),
-                                Some(v) => {
-                                    if v.contains(&(i, j)) {
-                                        if keys.just_pressed(KeyCode::Up) {
-                                            if keys.pressed(KeyCode::LControl) {
-                                                if j == 0 {
-                                                    part_data.data[i][j].joint_parrent_offset.y +=
-                                                        10.0;
-                                                } else {
-                                                    part_data.data[i][j]
-                                                        .extra_joint_parent_offset
-                                                        .y += 10.0;
-                                                }
-                                            } else if keys.pressed(KeyCode::LAlt) {
-                                                part_data.data[i][j].joint_offset.y += 10.0;
-                                            } else {
-                                                part_data.data[i][j].part_size.y += 10.0;
-                                                part_data.data[i][j].joint_offset.y += 10.0;
-                                            }
-                                        };
-                                        if keys.just_pressed(KeyCode::Down) {
-                                            if keys.pressed(KeyCode::LControl) {
-                                                if j == 0 {
-                                                    part_data.data[i][j].joint_parrent_offset.y -=
-                                                        10.0;
-                                                } else {
-                                                    part_data.data[i][j]
-                                                        .extra_joint_parent_offset
-                                                        .y -= 10.0;
-                                                }
-                                                // part_data.data[i][j].extra_joint_parent_offset.y -=
-                                                //     10.0;
-                                            } else if keys.pressed(KeyCode::LAlt) {
-                                                part_data.data[i][j].joint_offset.y -= 10.0;
-                                            } else {
-                                                part_data.data[i][j].part_size.y -= 10.0;
-                                                part_data.data[i][j].joint_offset.y -= 10.0;
-                                            }
-                                        };
-                                        if keys.just_pressed(KeyCode::Left) {
-                                            if keys.pressed(KeyCode::LControl) {
-                                                if j == 0 {
-                                                    part_data.data[i][j].joint_parrent_offset.x -=
-                                                        10.0;
-                                                } else {
-                                                    part_data.data[i][j]
-                                                        .extra_joint_parent_offset
-                                                        .x -= 10.0;
-                                                }
-                                                // part_data.data[i][j].extra_joint_parent_offset.x -=
-                                                //     10.0;
-                                            } else if keys.pressed(KeyCode::LAlt) {
-                                                part_data.data[i][j].joint_offset.x -= 10.0;
-                                            } else {
-                                                part_data.data[i][j].part_size.x -= 10.0;
-                                            }
-                                        };
-                                        if keys.just_pressed(KeyCode::Right) {
-                                            if keys.pressed(KeyCode::LControl) {
-                                                if j == 0 {
-                                                    part_data.data[i][j].joint_parrent_offset.x +=
-                                                        10.0;
-                                                } else {
-                                                    part_data.data[i][j]
-                                                        .extra_joint_parent_offset
-                                                        .x += 10.0;
-                                                }
-                                                // part_data.data[i][j].extra_joint_parent_offset.x +=
-                                                //     10.0;
-                                            } else if keys.pressed(KeyCode::LAlt) {
-                                                part_data.data[i][j].joint_offset.x += 10.0;
-                                            } else {
-                                                part_data.data[i][j].part_size.x += 10.0;
-                                            }
-                                        };
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    construct_entity(
-                        &entity_selector,
-                        &mut part_data.data,
-                        &mut parts.parts,
-                        (parent_entity, &parent_data),
-                        &mut commands,
-                    );
-                }
-            }
-        }
-    }
-}
-
-fn change_pos(part_data: &mut EntityData, pos_offset: Vec2) {
-    for i in 0..part_data.data.len() {
-        for j in 0..part_data.data[i].len() {
-            part_data.data[i][j].transform.x += pos_offset.x;
-            part_data.data[i][j].transform.y += pos_offset.y;
         }
     }
 }
