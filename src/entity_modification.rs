@@ -6,7 +6,34 @@ impl Plugin for CreatureModificationPlugin {
     fn build(&self, app: &mut App) {
         app.add_system(add_leg_system)
             .add_system(respawn_entity_system)
-            .add_system(reset_entity_system);
+            .add_system(reset_entity_system)
+            .add_system(toggle_gravity_system);
+    }
+}
+fn toggle_gravity_system(
+    mut reapier_config: ResMut<RapierConfiguration>,
+    keys: Res<Input<KeyCode>>,
+    mut parent: Query<(&mut Transform, &mut Velocity, &ParentData), With<ParentData>>,
+    mut legs: Query<(&mut Transform, &mut Velocity), Without<ParentData>>,
+) {
+    if keys.just_pressed(KeyCode::G) {
+        if reapier_config.gravity == Vec2::ZERO {
+            reapier_config.gravity = Vec2::new(0.0, -250.0);
+        } else {
+            reapier_config.gravity = Vec2::ZERO;
+        }
+    }
+    if reapier_config.gravity == Vec2::ZERO {
+        for (mut parent_transform, mut parent_velocity, parent_data) in &mut parent {
+            parent_transform.translation = parent_data.position;
+            parent_transform.rotation = Quat::from_rotation_y(0.0);
+            parent_velocity.angvel = 0.0;
+            parent_velocity.linvel = Vec2::ZERO;
+        }
+        for (mut transform, mut velocity) in &mut legs {
+            transform.rotation = Quat::from_rotation_y(0.0);
+            velocity.angvel = 0.0;
+        }
     }
 }
 

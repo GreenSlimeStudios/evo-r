@@ -1,3 +1,5 @@
+mod collision_map;
+mod creature_movement;
 mod entity_constructor;
 mod entity_modification;
 mod entity_selection;
@@ -5,6 +7,8 @@ mod entity_selection;
 use bevy::prelude::*;
 use bevy_inspector_egui::WorldInspectorPlugin;
 use bevy_rapier2d::prelude::*;
+use collision_map::*;
+use creature_movement::*;
 use entity_constructor::*;
 use entity_modification::*;
 use entity_selection::*;
@@ -20,18 +24,15 @@ fn main() {
         .add_plugins(DefaultPlugins)
         // .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_plugin(RapierDebugRenderPlugin::default())
-        .add_plugin(RapierPhysicsPlugin::<&CustomFilterTag>::pixels_per_meter(
-            100.0,
-        ))
+        .add_plugin(CollisionMapPlugin)
         .add_plugin(WorldInspectorPlugin::default())
         .add_plugin(PartSelectionPlugin)
         .add_plugin(CreatureConstructorPlugin)
         .add_plugin(CreatureModificationPlugin)
+        .add_plugin(CreatureMovmentPlugin)
         .add_startup_system(setup_graphics)
         .add_startup_system(setup_physics)
-        .add_system(move_objects)
         .add_system(move_camera_system)
-        .add_system(toggle_gravity)
         // .add_system(edit_selected_parts_system)
         .run();
 }
@@ -183,82 +184,10 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
         .insert(Name::new("entity data"));
 }
 
-fn move_objects(mut objects: Query<&mut Velocity, With<Leg>>, keys: Res<Input<KeyCode>>) {
-    for mut object in &mut objects {
-        if keys.pressed(KeyCode::D) {
-            object.angvel -= 1.0;
-        }
-        if keys.pressed(KeyCode::A) {
-            object.angvel += 1.0;
-        }
-        if keys.pressed(KeyCode::W) {
-            object.linvel.y += 10.0;
-        }
-        if object.angvel > 50.0 {
-            object.angvel = 50.0;
-        }
-        if object.angvel < -50.0 {
-            object.angvel = -50.0;
-        }
-    }
-}
-fn toggle_gravity(
-    mut reapier_config: ResMut<RapierConfiguration>,
-    keys: Res<Input<KeyCode>>,
-    mut parent: Query<(&mut Transform, &mut Velocity, &ParentData), With<ParentData>>,
-    mut legs: Query<(&mut Transform, &mut Velocity), Without<ParentData>>,
-) {
-    if keys.just_pressed(KeyCode::G) {
-        if reapier_config.gravity == Vec2::ZERO {
-            reapier_config.gravity = Vec2::new(0.0, -250.0);
-        } else {
-            reapier_config.gravity = Vec2::ZERO;
-        }
-    }
-    if reapier_config.gravity == Vec2::ZERO {
-        for (mut parent_transform, mut parent_velocity, parent_data) in &mut parent {
-            parent_transform.translation = parent_data.position;
-            parent_transform.rotation = Quat::from_rotation_y(0.0);
-            parent_velocity.angvel = 0.0;
-            parent_velocity.linvel = Vec2::ZERO;
-        }
-        for (mut transform, mut velocity) in &mut legs {
-            transform.rotation = Quat::from_rotation_y(0.0);
-            velocity.angvel = 0.0;
-        }
-    }
-}
-
 pub fn to_vec2(vec3: &Vec3) -> Vec2 {
     Vec2::new(vec3.x, vec3.y)
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Component)]
-enum CustomFilterTag {
-    GroupA,
-    GroupB,
-}
-
-// A custom filter that allows contacts only between rigid-bodies with the
-// same user_data value.
-// Note that using collision groups would be a more efficient way of doing
-// this, but we use custom filters instead for demonstration purpose.
-struct SameUserDataFilter;
-impl<'a> PhysicsHooksWithQuery<&'a CustomFilterTag> for SameUserDataFilter {
-    fn filter_contact_pair(
-        &self,
-        context: PairFilterContextView,
-        tags: &Query<&'a CustomFilterTag>,
-    ) -> Option<SolverFlags> {
-        if tags.get(context.collider1()).ok().copied()
-            != tags.get(context.collider2()).ok().copied()
-        {
-            Some(SolverFlags::COMPUTE_IMPULSES)
-        } else {
-            None
-        }
-    }
-}
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
 pub struct Body;
