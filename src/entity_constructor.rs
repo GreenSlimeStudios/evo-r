@@ -7,6 +7,8 @@ impl Plugin for CreatureConstructorPlugin {
         app.register_type::<ParentData>()
             .register_type::<Joint>()
             .register_type::<Leg>()
+            .register_type::<EntityData>()
+            .register_type::<EntityParts>()
             // .register_type::<PartData>()
             ;
     }
@@ -131,6 +133,18 @@ pub struct PartData {
     pub transform: Vec3,
     pub part_size: Vec2,
     pub id: (usize, usize),
+}
+#[derive(Component, Default, Reflect)]
+#[reflect(Component)]
+pub struct EntityData {
+    #[reflect(ignore)]
+    pub data: Vec<Vec<PartData>>,
+}
+#[derive(Component, Default, Reflect)]
+#[reflect(Component)]
+pub struct EntityParts {
+    #[reflect(ignore)]
+    pub parts: Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>,
 }
 
 pub fn create_part(
