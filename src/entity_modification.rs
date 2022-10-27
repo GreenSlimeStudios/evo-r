@@ -41,10 +41,18 @@ fn add_leg_system(
     reapier_config: Res<RapierConfiguration>,
     windows: Res<Windows>,
     mut commands: Commands,
-    parent: Query<(&GlobalTransform, Entity, &ParentData)>,
+    mut parent: Query<
+        (
+            &GlobalTransform,
+            Entity,
+            &ParentData,
+            &mut ColliderDebugColor,
+        ),
+        Without<Leg>,
+    >,
     mut parts: Query<(&mut EntityData, &mut EntityParts)>,
     buttons: Res<Input<MouseButton>>,
-    legs: Query<(&GlobalTransform, &Leg)>,
+    mut legs: Query<(&GlobalTransform, &Leg, &mut ColliderDebugColor)>,
     keys: Res<Input<KeyCode>>,
     mut selected_entity: Query<&mut SelectedEntity>,
 ) {
@@ -61,17 +69,21 @@ fn add_leg_system(
         if keys.pressed(KeyCode::R) {
             return;
         }
-        if (buttons.just_pressed(MouseButton::Left) || buttons.just_pressed(MouseButton::Right))
-            && reapier_config.gravity == Vec2::ZERO
-        {
+        if
+        // (buttons.just_pressed(MouseButton::Left) || buttons.just_pressed(MouseButton::Right))
+        // &&
+        reapier_config.gravity == Vec2::ZERO {
             for mut entity_selector in &mut selected_entity {
                 for (mut entity_data, mut entity_parts) in &mut parts {
-                    for (parent_transform, parent_entity, parent_data) in &parent {
+                    for (parent_transform, parent_entity, parent_data, mut parent_collider_color) in
+                        &mut parent
+                    {
                         if (position.x - parent_transform.translation().x).abs()
                             < parent_data.size.x
                             && (position.y - parent_transform.translation().y).abs()
                                 < parent_data.size.y
                         {
+                            parent_collider_color.0 = Color::rgb(0.0, 0.5, 0.0);
                             if buttons.just_pressed(MouseButton::Left) {
                                 entity_data.data.push(Vec::new());
                                 let index1: usize = entity_data.data.len() - 1;
@@ -108,7 +120,15 @@ fn add_leg_system(
                             }
                             break;
                         } else {
-                            for (leg_trasform, leg) in &legs {
+                            if parent_collider_color.0 == Color::rgb(0.0, 0.5, 0.0) {
+                                if entity_selector.parent {
+                                    parent_collider_color.0 = Color::rgb(2.0, 2.0, 2.0);
+                                } else {
+                                    parent_collider_color.0 = Color::rgb(1.0, 0.0, 1.0);
+                                }
+                            }
+
+                            for (leg_trasform, leg, mut collider_color) in &mut legs {
                                 let mut parent_leg_data =
                                     entity_data.data[leg.id.0][leg.id.1].clone();
                                 if parent_leg_data.id.1 == 0 {
@@ -140,13 +160,16 @@ fn add_leg_system(
                                     .abs()
                                     < parent_leg_data.part_size.x
                                     && (position.y
-                                    - leg_trasform.translation().y
+                                    - leg_trasform.translation().y)
                                     // - parent_leg_data.joint_parrent_offset.y
                                     // - parent_leg_data.part_size.y
-                                    - parent_leg_data.joint_offset.y)
+                                    // - parent_leg_data.joint_offset.y
                                         .abs()
-                                        < parent_leg_data.part_size.y
+                                        // - parent_leg_data.part_size.y
+                                        < parent_leg_data.part_size.y + 10.0
                                 {
+                                    collider_color.0 = Color::rgb(0.0, 1.0, 0.0);
+                                    // OOOOOOOOOOOOOOOOOOOOOOOOOOO
                                     if buttons.just_pressed(MouseButton::Left) {
                                         let index2: usize = entity_data.data[leg.id.0].len();
                                         entity_data.data[leg.id.0].push(
@@ -220,6 +243,25 @@ fn add_leg_system(
                                     //     &mut commands,
                                     // );
                                     break;
+                                } else {
+                                    if collider_color.0 == Color::rgb(0.0, 1.0, 0.0) {
+                                        match &entity_selector.parts {
+                                            Some(v) => {
+                                                if v.contains(&leg.id) {
+                                                    collider_color.0 = Color::rgb(2.0, 2.0, 2.0);
+                                                } else {
+                                                    collider_color.0 = Color::rgb(1.0, 0.0, 1.0);
+                                                }
+                                            }
+                                            None => {
+                                                collider_color.0 = Color::rgb(1.0, 0.0, 1.0);
+                                            }
+                                        }
+                                        // if entity_selector.parts.contains(&leg.id) {
+                                        // } else {
+                                        //     collider_color.0 = Color::rgb(2.0, 2.0, 2.0);
+                                        // }
+                                    }
                                 }
                             }
                         }

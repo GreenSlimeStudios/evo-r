@@ -179,7 +179,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
         .insert(EntityData { data: part_datas })
         .insert(EntityParts { parts })
         .insert(SelectedEntity {
-            parent: false,
+            parent: true,
             parts: None,
         })
         .insert(Name::new("entity data"));
