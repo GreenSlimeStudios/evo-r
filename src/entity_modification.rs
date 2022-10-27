@@ -118,7 +118,7 @@ fn add_leg_system(
                                     &mut commands,
                                 );
                             }
-                            break;
+                            // break;
                         } else {
                             if parent_collider_color.0 == Color::rgb(0.0, 0.5, 0.0) {
                                 if entity_selector.parent {

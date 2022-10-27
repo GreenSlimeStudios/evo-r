@@ -78,13 +78,14 @@ fn edit_selected_parts_system(
                                                 if j == 0 {
                                                     part_data.data[i][j].joint_parrent_offset.y +=
                                                         10.0;
+                                                    part_data.data[i][j].transform.y += 10.0;
                                                 } else {
                                                     part_data.data[i][j]
                                                         .extra_joint_parent_offset
                                                         .y += 10.0;
                                                 }
                                             } else if keys.pressed(KeyCode::LAlt) {
-                                                part_data.data[i][j].joint_offset.y += 10.0;
+                                                part_data.data[i][j].joint_offset.y -= 10.0;
                                             } else {
                                                 part_data.data[i][j].part_size.y += 10.0;
                                                 part_data.data[i][j].joint_offset.y += 10.0;
@@ -95,6 +96,7 @@ fn edit_selected_parts_system(
                                                 if j == 0 {
                                                     part_data.data[i][j].joint_parrent_offset.y -=
                                                         10.0;
+                                                    part_data.data[i][j].transform.x -= 10.0;
                                                 } else {
                                                     part_data.data[i][j]
                                                         .extra_joint_parent_offset
@@ -103,7 +105,7 @@ fn edit_selected_parts_system(
                                                 // part_data.data[i][j].extra_joint_parent_offset.y -=
                                                 //     10.0;
                                             } else if keys.pressed(KeyCode::LAlt) {
-                                                part_data.data[i][j].joint_offset.y -= 10.0;
+                                                part_data.data[i][j].joint_offset.y += 10.0;
                                             } else {
                                                 part_data.data[i][j].part_size.y -= 10.0;
                                                 part_data.data[i][j].joint_offset.y -= 10.0;
@@ -114,6 +116,7 @@ fn edit_selected_parts_system(
                                                 if j == 0 {
                                                     part_data.data[i][j].joint_parrent_offset.x -=
                                                         10.0;
+                                                    part_data.data[i][j].transform.x -= 10.0;
                                                 } else {
                                                     part_data.data[i][j]
                                                         .extra_joint_parent_offset
@@ -122,7 +125,7 @@ fn edit_selected_parts_system(
                                                 // part_data.data[i][j].extra_joint_parent_offset.x -=
                                                 //     10.0;
                                             } else if keys.pressed(KeyCode::LAlt) {
-                                                part_data.data[i][j].joint_offset.x -= 10.0;
+                                                part_data.data[i][j].joint_offset.x += 10.0;
                                             } else {
                                                 part_data.data[i][j].part_size.x -= 10.0;
                                             }
@@ -132,6 +135,7 @@ fn edit_selected_parts_system(
                                                 if j == 0 {
                                                     part_data.data[i][j].joint_parrent_offset.x +=
                                                         10.0;
+                                                    part_data.data[i][j].transform.x += 10.0;
                                                 } else {
                                                     part_data.data[i][j]
                                                         .extra_joint_parent_offset
@@ -140,7 +144,7 @@ fn edit_selected_parts_system(
                                                 // part_data.data[i][j].extra_joint_parent_offset.x +=
                                                 //     10.0;
                                             } else if keys.pressed(KeyCode::LAlt) {
-                                                part_data.data[i][j].joint_offset.x += 10.0;
+                                                part_data.data[i][j].joint_offset.x -= 10.0;
                                             } else {
                                                 part_data.data[i][j].part_size.x += 10.0;
                                             }

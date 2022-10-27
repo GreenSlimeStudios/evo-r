@@ -43,8 +43,11 @@ pub fn create_part_data(
         joint_offset,
         part_size,
         transform: Vec3::new(
-            parent_data.transform.x + parent_data.joint_parrent_offset.x,
-            parent_data.transform.y + parent_data.joint_parrent_offset.y - parent_data.part_size.y,
+            parent_data.transform.x
+                + parent_data.joint_parrent_offset.x
+                + parent_data.extra_joint_parent_offset.x,
+            parent_data.transform.y + parent_data.joint_parrent_offset.y - parent_data.part_size.y
+                + parent_data.extra_joint_parent_offset.y,
             0.0,
         ),
         joint_parrent_offset: Vec2::new(
