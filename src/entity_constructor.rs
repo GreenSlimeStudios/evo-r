@@ -261,5 +261,6 @@ fn spawn_parent(
             size: parent_data.size,
             position: parent_data.position,
         })
+        .insert(Body)
         .id()
 }

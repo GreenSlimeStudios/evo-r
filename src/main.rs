@@ -1,3 +1,4 @@
+mod camera_movment;
 mod collision_map;
 mod creature_movement;
 mod entity_constructor;
@@ -7,6 +8,7 @@ mod entity_selection;
 use bevy::prelude::*;
 use bevy_inspector_egui::WorldInspectorPlugin;
 use bevy_rapier2d::prelude::*;
+use camera_movment::*;
 use collision_map::*;
 use creature_movement::*;
 use entity_constructor::*;
@@ -30,10 +32,9 @@ fn main() {
         .add_plugin(CreatureConstructorPlugin)
         .add_plugin(CreatureModificationPlugin)
         .add_plugin(CreatureMovmentPlugin)
+        .add_plugin(CameraAdditionsPlugin)
         .add_startup_system(setup_graphics)
         .add_startup_system(setup_physics)
-        .add_system(move_camera_system)
-        // .add_system(edit_selected_parts_system)
         .run();
 }
 
@@ -41,7 +42,7 @@ fn setup_graphics(mut commands: Commands) {
     commands.spawn_bundle(Camera2dBundle {
         transform: Transform::from_xyz(0.0, 20.0, 0.0),
         ..default()
-    });
+    }); // .insert(Body);
 }
 
 // pub struct PartConstructorData {
@@ -176,7 +177,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     commands
         .spawn_bundle(TransformBundle::default())
         .insert(EntityData { data: part_datas })
-        .insert(EntityParts { parts: parts })
+        .insert(EntityParts { parts })
         .insert(SelectedEntity {
             parent: false,
             parts: None,
@@ -186,19 +187,4 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
 
 pub fn to_vec2(vec3: &Vec3) -> Vec2 {
     Vec2::new(vec3.x, vec3.y)
-}
-
-#[derive(Component, Default, Reflect)]
-#[reflect(Component)]
-pub struct Body;
-
-fn move_camera_system(
-    body_transforms: Query<&GlobalTransform, With<Body>>,
-    mut cameras: Query<&mut Transform, With<Camera2d>>,
-) {
-    for mut camera_transform in &mut cameras {
-        for body_transform in &body_transforms {
-            camera_transform.translation.x = body_transform.translation().x;
-        }
-    }
 }
