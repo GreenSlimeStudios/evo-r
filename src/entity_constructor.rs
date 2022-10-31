@@ -8,9 +8,7 @@ impl Plugin for CreatureConstructorPlugin {
             .register_type::<Joint>()
             .register_type::<Leg>()
             .register_type::<EntityData>()
-            .register_type::<EntityParts>()
-            // .register_type::<PartData>()
-            ;
+            .register_type::<EntityParts>();
     }
 }
 
@@ -91,7 +89,6 @@ pub fn construct_entity(
                         Some(current_data.joint_offset),
                         current_data.id,
                     );
-                    // PartData {
                 }
             }
 
@@ -105,7 +102,6 @@ pub fn construct_entity(
     }
 
     for i in 0..parts[0].len() {
-        // parts[i].reverse();
         for j in 0..parts[0][i].len() {
             commands.entity(parts[0][i][j].0).with_children(|cmd| {
                 cmd.spawn()
@@ -114,8 +110,6 @@ pub fn construct_entity(
 
             commands
                 .entity(if part_datas[i][j].id.1 != 0 {
-                    // if j + 1 != parts[i].len() {
-                    //     parts[i][j + 1].2
                     parts[0][part_datas[i][j].parent_id.0][part_datas[i][j].parent_id.1].2
                 } else {
                     parent.0
@@ -125,7 +119,6 @@ pub fn construct_entity(
                         .insert(ImpulseJoint::new(parts[0][i][j].0, parts[0][i][j].1));
                 });
         }
-        // parts[i].reverse();
     }
 }
 pub fn construct_entities(
@@ -147,19 +140,12 @@ pub fn construct_entities(
             delete_entities(commands, &mut parts.parts, parent.0);
         }
     }
-    // return;
-    // for mut parent in &parents {
     for mut parts in &mut *parts {
         let parts = &mut parts.parts;
 
         println!("creating part datas");
-        // parts.push(Vec::new());
         for i in 0..part_datas.len() {
             for j in 0..part_datas[i].len() {
-                // let is_part_selected: bool = match &entity_selector.parts {
-                //     Some(v) => v.contains(&(i, j)),
-                //     None => false,
-                // };
                 let current_data: PartData = part_datas[i][j].clone();
                 let parent_leg_data: Option<PartData> = match j {
                     0 => None,
@@ -178,7 +164,6 @@ pub fn construct_entities(
                             Some(current_data.joint_offset),
                             current_data.id,
                         );
-                        // PartData {
                     }
                 }
             }
@@ -206,10 +191,7 @@ pub fn construct_entities(
             println!("attaching the parts together | parent no. {}", id);
             let parent: Entity = spawn_parent(&parent_data, commands, entity_selector.parent, id);
 
-            // let ilen = parts.len() / (id + 1) - parts.len();
             for i in 0..parts[id].len() {
-                // parts[i].reverse();
-                // let jlen = parts[i + ilen].len() / (id + 1);
                 for j in 0..parts[id][i].len() {
                     commands.entity(parts[id][i][j].0).with_children(|cmd| {
                         cmd.spawn()
@@ -217,10 +199,7 @@ pub fn construct_entities(
                     });
 
                     commands
-                        //error on j
                         .entity(if part_datas[i][j].id.1 != 0 {
-                            // if j + 1 != parts[i].len() {
-                            //     parts[i][j + 1].2
                             parts[id][part_datas[i][j].parent_id.0][part_datas[i][j].parent_id.1].2
                         } else {
                             parent
@@ -231,9 +210,6 @@ pub fn construct_entities(
                         });
                 }
             }
-            // parts[i].reverse();
-            // }
-            // break;
         }
     }
 }

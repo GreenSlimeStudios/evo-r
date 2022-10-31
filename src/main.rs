@@ -45,21 +45,12 @@ fn setup_graphics(mut commands: Commands) {
     commands.spawn_bundle(Camera2dBundle {
         transform: Transform::from_xyz(0.0, 20.0, 0.0),
         ..default()
-    }); // .insert(Body);
+    });
 }
-
-// pub struct PartConstructorData {
-//     // joint_entity: Entity,
-//     // joint_builder: RevoluteJointBuilder,
-//     pub parts: Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>,
-// }
 
 pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierConfiguration>) {
     reapier_config.gravity = Vec2::new(0.0, 0.0);
 
-    /*
-     * Ground
-     */
     let ground_size = 50000.0;
     let ground_height = 10.0;
 
@@ -73,8 +64,6 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
         position: entity_pos,
         size: Vec2::new(100.0, 30.0),
     };
-
-    // let mut parents: Vec<Entity> = Vec::new();
 
     let parent_entity = commands
         .spawn_bundle(TransformBundle {
@@ -98,65 +87,6 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     let mut parts: Vec<Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>> =
         Vec::new();
 
-    // part_datas.push(Vec::new());
-    // part_datas[0].push(PartData {
-    //     joint_parrent_offset: Vec2::new(40.0, 10.0),
-    //     joint_offset: Vec2::new(0.0, 40.0), // y 10 lower than in part size y
-    //     transform: Vec3::new(entity_pos.x, entity_pos.y, 0.0),
-    //     part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
-    // });
-
-    // let part_data: PartData = part_datas[0][0].clone();
-    // part_datas[0].push(
-    //     create_part_data(part_data, Vec2 { x: 10.0, y: 60.0 }, None),
-    //     // PartData {
-    //     //     joint_parrent_offset: Vec2::new(0.0, -40.0), // y is the same as in the parent entity part size y
-    //     //     joint_offset: Vec2::new(0.0, 60.0),          // y 10 lower than in part size y
-    //     //     transform: Vec3::new(entity_pos.x + 40.0, entity_pos.y + 10.0 - 40.0, 0.0),
-    //     //     part_size: Vec2::new(10.0, 60.0),
-    //     // },
-    // );
-    // let part_data: PartData = part_datas[0][1].clone();
-    // part_datas[0].push(create_part_data(part_data, Vec2 { x: 10.0, y: 30.0 }, None));
-    // part_datas.push(Vec::new());
-    // part_datas[1].push(PartData {
-    //     joint_parrent_offset: Vec2::new(-40.0, -10.0),
-    //     joint_offset: Vec2::new(0.0, 40.0), // y 10 lower than in part size y
-    //     transform: Vec3::new(entity_pos.x, entity_pos.y, 0.0),
-    //     part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
-    // });
-    // part_datas[1].push(PartData {
-    //     joint_parrent_offset: Vec2::new(0.0, -40.0), // y is the same as in the parent entity part size y
-    //     joint_offset: Vec2::new(0.0, 60.0),          // y 10 lower than in part size y
-    //     transform: Vec3::new(entity_pos.x - 40.0, entity_pos.y - 10.0 - 40.0, 0.0),
-    //     part_size: Vec2::new(10.0, 60.0),
-    // });
-    // part_datas.push(Vec::new());
-    // part_datas[2].push(PartData {
-    //     joint_parrent_offset: Vec2::new(0.0, 10.0),
-    //     joint_offset: Vec2::new(0.0, 40.0), // y 10 lower than in part size y
-    //     transform: Vec3::new(entity_pos.x, entity_pos.y, 0.0),
-    //     part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
-    // });
-    // part_datas[2].push(PartData {
-    //     joint_parrent_offset: Vec2::new(0.0, -40.0), // y is the same as in the parent entity part size y
-    //     joint_offset: Vec2::new(0.0, 60.0),          // y 10 lower than in part size y
-    //     transform: Vec3::new(entity_pos.x, entity_pos.y + 10.0 - 40.0, 0.0),
-    //     part_size: Vec2::new(10.0, 60.0),
-    // });
-    // part_datas.push(Vec::new());
-    // part_datas[3].push(PartData {
-    //     joint_parrent_offset: Vec2::new(0.0, -10.0),
-    //     joint_offset: Vec2::new(0.0, 40.0), // y 10 lower than in part size y
-    //     transform: Vec3::new(entity_pos.x, entity_pos.y, 0.0),
-    //     part_size: Vec2::new(10.0, 40.0), // y is the same as in the child entity joint offset y
-    // });
-    // part_datas[3].push(PartData {
-    //     joint_parrent_offset: Vec2::new(0.0, -40.0), // y is the same as in the parent entity part size y
-    //     joint_offset: Vec2::new(0.0, 60.0),          // y 10 lower than in part size y
-    //     transform: Vec3::new(entity_pos.x, entity_pos.y - 10.0 - 40.0, 0.0),
-    //     part_size: Vec2::new(10.0, 60.0),
-    // });
     construct_entity(
         0,
         &SelectedEntity {
@@ -176,11 +106,9 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
             0.0,
         )))
         .insert(Collider::cuboid(ground_size, ground_height))
-        // .insert(ActiveHooks::FILTER_CONTACT_PAIRS);
         .insert(CustomFilterTag::GroupB);
 
     // reapier_config.gravity = Vec2::new(0.0, -250.0);
-    // commands.insert_resource(part_datas);
     commands
         .spawn_bundle(TransformBundle::default())
         .insert(EntityData { data: part_datas })

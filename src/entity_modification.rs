@@ -28,13 +28,8 @@ fn toggle_gravity_system(
             reapier_config.gravity = Vec2::ZERO;
             for entity_selector in &entity_selectors {
                 for mut part_data in &mut part_datas {
-                    // for mut parts in &mut parts {
                     construct_entities(
-                        if reapier_config.gravity == Vec2::ZERO {
-                            1
-                        } else {
-                            GROUP_SIZE
-                        },
+                        1,
                         entity_selector,
                         &mut part_data.data,
                         &mut parts,
@@ -42,9 +37,7 @@ fn toggle_gravity_system(
                         &mut commands,
                     );
                     break;
-                    // }
                 }
-                // }
                 break;
             }
         }
@@ -90,15 +83,10 @@ fn add_leg_system(
             _position.x - window.width() / 2.0,
             _position.y - window.height() / 2.0 + 20.0,
         );
-        // println!("{}", position);
-        // for (tower, transform) in &targets {
         if keys.pressed(KeyCode::R) {
             return;
         }
-        if
-        // (buttons.just_pressed(MouseButton::Left) || buttons.just_pressed(MouseButton::Right))
-        // &&
-        reapier_config.gravity == Vec2::ZERO {
+        if reapier_config.gravity == Vec2::ZERO {
             for mut entity_selector in &mut selected_entity {
                 for (mut entity_data, mut entity_parts) in &mut parts {
                     for (parent_transform, parent_entity, parent_data, mut parent_collider_color) in
@@ -181,25 +169,18 @@ fn add_leg_system(
                                         ),
                                     }
                                 };
-                                if (
-                                    position.x
-                                        - leg_trasform.translation().x
-                                        - parent_leg_data.joint_offset.x
-                                    // - parent_leg_data.joint_parrent_offset.x
-                                )
+                                if (position.x
+                                    - leg_trasform.translation().x
+                                    - parent_leg_data.joint_offset.x)
                                     .abs()
                                     < parent_leg_data.part_size.x
                                     && (position.y
                                     - leg_trasform.translation().y)
-                                    // - parent_leg_data.joint_parrent_offset.y
-                                    // - parent_leg_data.part_size.y
-                                    // - parent_leg_data.joint_offset.y
                                         .abs()
                                         // - parent_leg_data.part_size.y
                                         < parent_leg_data.part_size.y + 10.0
                                 {
                                     collider_color.0 = Color::rgb(0.0, 1.0, 0.0);
-                                    // OOOOOOOOOOOOOOOOOOOOOOOOOOO
                                     if buttons.just_pressed(MouseButton::Left) {
                                         let index2: usize = entity_data.data[leg.id.0].len();
                                         entity_data.data[leg.id.0].push(
@@ -293,10 +274,6 @@ fn add_leg_system(
                                                 collider_color.0 = Color::rgb(1.0, 0.0, 1.0);
                                             }
                                         }
-                                        // if entity_selector.parts.contains(&leg.id) {
-                                        // } else {
-                                        //     collider_color.0 = Color::rgb(2.0, 2.0, 2.0);
-                                        // }
                                     }
                                 }
                             }
