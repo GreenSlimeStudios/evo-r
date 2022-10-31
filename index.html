@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -6,26 +7,46 @@
 	<link rel="stylesheet" type="text/css" href="style.css" />
     <style>
 		.title {
+			background-color: rgb(20,0,20);
 			display: flex;
 			justify-content: center;
 			flex-direction: row;
+			height: 40px;
+			color: white;
+		}
+		.title p{
+			top: 0px;
+			margin: 0px;
+			position: absolute;
+			padding: 10px;
 			font-size: 20px;
 		}
+		.title:before{
+			background:linear-gradient(to right,yellow, orange, red);
+			width: 0%;
+			content:"";
+		}
+		.title:hover:before{
+			width: 100%;
+			transition: width 600ms ease;
+		}
+
 		html, body, canvas {
+			background-color: rgb(20,0,20);
 			margin: 0px;
 			padding: 0px;
 			width: 100%;
 			height: 100%;
 			overflow: hidden;
 			position: absolute;
-			background: black;
+			/*background: black;*/
 			z-index: 0;
 		}
     </style>
 </head>
 
 <body>
-	<div class="title"><p>CREATURE CREATOR BEVY WASM</p></div>
+	<div class="title"><p class="title_text">CREATURE CREATOR BEVY WASM</p></div>
     <canvas id="glcanvas" tabindex='1'></canvas>
     <!-- Minified and statically hosted version of https://github.com/not-fl3/macroquad/blob/master/js/mq_js_bundle.js -->
     <script src="https://not-fl3.github.io/miniquad-samples/mq_js_bundle.js"></script>

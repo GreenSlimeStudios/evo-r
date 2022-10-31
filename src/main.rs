@@ -15,7 +15,7 @@ use entity_constructor::*;
 use entity_modification::*;
 use entity_selection::*;
 
-const GROUP_SIZE: usize = 1;
+const GROUP_SIZE: usize = 10;
 
 fn main() {
     App::new()

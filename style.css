@@ -13,3 +13,7 @@ html, body, canvas {
 	background: black;
 	z-index: 0;
 }
+
+.title_text{
+	background-color: red;
+}

@@ -11,8 +11,13 @@ impl Plugin for CreatureModificationPlugin {
     }
 }
 fn toggle_gravity_system(
-    mut reapier_config: ResMut<RapierConfiguration>,
+    entity_selectors: Query<&SelectedEntity>,
     keys: Res<Input<KeyCode>>,
+    mut commands: Commands,
+    parents: Query<(Entity, &ParentData)>,
+    mut part_datas: Query<&mut EntityData>,
+    mut parts: Query<&mut EntityParts>,
+    mut reapier_config: ResMut<RapierConfiguration>,
     mut parent: Query<(&mut Transform, &mut Velocity, &ParentData), With<ParentData>>,
     mut legs: Query<(&mut Transform, &mut Velocity), Without<ParentData>>,
 ) {
@@ -21,6 +26,27 @@ fn toggle_gravity_system(
             reapier_config.gravity = Vec2::new(0.0, -250.0);
         } else {
             reapier_config.gravity = Vec2::ZERO;
+            for entity_selector in &entity_selectors {
+                for mut part_data in &mut part_datas {
+                    // for mut parts in &mut parts {
+                    construct_entities(
+                        if reapier_config.gravity == Vec2::ZERO {
+                            1
+                        } else {
+                            GROUP_SIZE
+                        },
+                        entity_selector,
+                        &mut part_data.data,
+                        &mut parts,
+                        parents,
+                        &mut commands,
+                    );
+                    break;
+                    // }
+                }
+                // }
+                break;
+            }
         }
     }
     if reapier_config.gravity == Vec2::ZERO {
@@ -134,7 +160,7 @@ fn add_leg_system(
 
                             for (leg_trasform, leg, mut collider_color) in &mut legs {
                                 let mut parent_leg_data =
-                                    entity_data.data[leg.id.0][leg.id.1].clone();
+                                    entity_data.data[leg.id.1][leg.id.2].clone();
                                 if parent_leg_data.id.1 == 0 {
                                     parent_leg_data = PartData {
                                         parent_id: (0, 0),
@@ -211,25 +237,27 @@ fn add_leg_system(
                                         if keys.pressed(KeyCode::LControl) {
                                             match &mut entity_selector.parts {
                                                 None => {
-                                                    entity_selector.parts = Some(vec![leg.id]);
+                                                    entity_selector.parts =
+                                                        Some(vec![(leg.id.1, leg.id.2)]);
                                                 }
                                                 Some(vec) => {
-                                                    if vec.contains(&leg.id) {
+                                                    if vec.contains(&(leg.id.1, leg.id.2)) {
                                                         let mut index: usize = 0;
                                                         for k in 0..vec.len() {
-                                                            if vec[k] == leg.id {
+                                                            if vec[k] == (leg.id.1, leg.id.2) {
                                                                 index = k;
                                                                 break;
                                                             }
                                                         }
                                                         vec.remove(index);
                                                     } else {
-                                                        vec.push(leg.id);
+                                                        vec.push((leg.id.1, leg.id.2));
                                                     }
                                                 }
                                             }
                                         } else {
-                                            entity_selector.parts = Some(vec![(leg.id)])
+                                            entity_selector.parts =
+                                                Some(vec![((leg.id.1, leg.id.2))])
                                         }
                                         construct_entity(
                                             0,
@@ -255,7 +283,7 @@ fn add_leg_system(
                                     if collider_color.0 == Color::rgb(0.0, 1.0, 0.0) {
                                         match &entity_selector.parts {
                                             Some(v) => {
-                                                if v.contains(&leg.id) {
+                                                if v.contains(&(leg.id.1, leg.id.2)) {
                                                     collider_color.0 = Color::rgb(2.0, 2.0, 2.0);
                                                 } else {
                                                     collider_color.0 = Color::rgb(1.0, 0.0, 1.0);

@@ -17,7 +17,7 @@ impl Plugin for CreatureConstructorPlugin {
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
 pub struct Leg {
-    pub id: (usize, usize),
+    pub id: (usize, usize, usize),
 }
 
 #[derive(Component, Default, Reflect)]
@@ -95,7 +95,12 @@ pub fn construct_entity(
                 }
             }
 
-            parts[0][i].push(create_part(&part_datas[i][j], commands, is_part_selected));
+            parts[0][i].push(create_part(
+                0,
+                &part_datas[i][j],
+                commands,
+                is_part_selected,
+            ));
         }
     }
 
@@ -189,7 +194,12 @@ pub fn construct_entities(
                         Some(v) => v.contains(&(i, j)),
                         None => false,
                     };
-                    parts[id][i].push(create_part(&part_datas[i][j], commands, is_part_selected));
+                    parts[id][i].push(create_part(
+                        id,
+                        &part_datas[i][j],
+                        commands,
+                        is_part_selected,
+                    ));
                 }
             }
 
@@ -259,6 +269,7 @@ pub struct EntityParts {
 }
 
 pub fn create_part(
+    parent_body_id: usize,
     part_data: &PartData,
     commands: &mut Commands,
     is_part_selected: bool,
@@ -320,7 +331,9 @@ pub fn create_part(
             },
         })
         .insert(RigidBody::Dynamic)
-        .insert(Leg { id: part_data.id })
+        .insert(Leg {
+            id: (parent_body_id, part_data.id.0, part_data.id.1),
+        })
         .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
         .insert(CustomFilterTag::GroupA)
         .id();
