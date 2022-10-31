@@ -21,6 +21,8 @@ pub struct Leg {
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
 pub struct Joint;
+
+/// Creates a part data representing a creature part based on the parent ~leg part data.
 pub fn create_part_data(
     parent_id: (usize, usize),
     extra_joint_parent_offset: Vec2,
@@ -54,6 +56,8 @@ pub fn create_part_data(
         ),
     };
 }
+
+/// Deletes the edited creature and constructs it from the part data.
 pub fn construct_entity(
     id: usize,
     entity_selector: &SelectedEntity,
@@ -62,9 +66,10 @@ pub fn construct_entity(
     mut parent: (Entity, &ParentData),
     commands: &mut Commands,
 ) {
-    delete_entities(commands, parts, parent.0);
+    delete_creature_instance(commands, parts, parent.0);
     parent.0 = spawn_parent(parent.1, commands, entity_selector.parent, id);
 
+    // Constructs the parts
     parts.push(Vec::new());
     for i in 0..part_datas.len() {
         parts[0].push(Vec::new());
@@ -101,6 +106,7 @@ pub fn construct_entity(
         }
     }
 
+    // Attaches the parts to eachother forming the whole creature
     for i in 0..parts[0].len() {
         for j in 0..parts[0][i].len() {
             commands.entity(parts[0][i][j].0).with_children(|cmd| {
@@ -121,6 +127,8 @@ pub fn construct_entity(
         }
     }
 }
+
+/// Deletes all of the creatures and constructs them from the part data.
 pub fn construct_entities(
     group_size: usize,
     entity_selector: &SelectedEntity,
@@ -134,16 +142,17 @@ pub fn construct_entities(
         position: Vec3::ZERO,
         size: Vec2::ZERO,
     };
+    // Deleting the existing creatures
     for parent in &parents {
         parent_data = parent.1.clone();
         for mut parts in &mut *parts {
-            delete_entities(commands, &mut parts.parts, parent.0);
+            delete_creature_instance(commands, &mut parts.parts, parent.0);
         }
     }
+
     for mut parts in &mut *parts {
         let parts = &mut parts.parts;
-
-        println!("creating part datas");
+        // Creating the part data
         for i in 0..part_datas.len() {
             for j in 0..part_datas[i].len() {
                 let current_data: PartData = part_datas[i][j].clone();
@@ -170,7 +179,7 @@ pub fn construct_entities(
         }
 
         for id in 0..group_size {
-            println!("constructing the parts for parent no. {}", id);
+            // Constructing accual parts and joints from the part data
             parts.push(Vec::new());
             for i in 0..part_datas.len() {
                 parts[id].push(Vec::new());
@@ -188,7 +197,7 @@ pub fn construct_entities(
                 }
             }
 
-            println!("attaching the parts together | parent no. {}", id);
+            // Attaching the parts and joints together to create the creature
             let parent: Entity = spawn_parent(&parent_data, commands, entity_selector.parent, id);
 
             for i in 0..parts[id].len() {
@@ -244,12 +253,14 @@ pub struct EntityParts {
     pub parts: Vec<Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>>,
 }
 
+/// This function creates a part with its joint from a specified part data
 pub fn create_part(
     parent_body_id: usize,
     part_data: &PartData,
     commands: &mut Commands,
     is_part_selected: bool,
 ) -> (Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder) {
+    // Creating the Joint
     let entity: Entity = commands
         .spawn_bundle(TransformBundle {
             local: Transform::from_xyz(
@@ -278,6 +289,7 @@ pub fn create_part(
         RevoluteJointBuilder::new().local_anchor2(part_data.joint_parrent_offset);
     let joint_to_joint = RevoluteJointBuilder::new().local_anchor1(part_data.joint_offset);
 
+    // Creating the part
     let part_entity = commands
         .spawn_bundle(TransformBundle {
             local: Transform::from_xyz(
@@ -316,7 +328,9 @@ pub fn create_part(
 
     (entity, joint_to_parrent, part_entity, joint_to_joint)
 }
-fn delete_entities(
+
+/// Deletes a specified creature.
+fn delete_creature_instance(
     commands: &mut Commands,
     parts: &mut Vec<Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>>,
     parent: Entity,
@@ -332,6 +346,8 @@ fn delete_entities(
     }
     parts.clear();
 }
+
+/// Spawns the most upper part (body) of the creature.
 fn spawn_parent(
     parent_data: &ParentData,
     commands: &mut Commands,
