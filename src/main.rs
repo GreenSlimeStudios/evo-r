@@ -15,6 +15,8 @@ use entity_constructor::*;
 use entity_modification::*;
 use entity_selection::*;
 
+const GROUP_SIZE: usize = 3;
+
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(0.2, 0.2, 0.2)))
@@ -66,9 +68,12 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     let entity_pos: Vec3 = Vec3::new(0.0, 300.0, 0.0);
 
     let parent_data: ParentData = ParentData {
+        id: 0,
         position: entity_pos,
         size: Vec2::new(100.0, 30.0),
     };
+
+    // let mut parents: Vec<Entity> = Vec::new();
 
     let parent_entity = commands
         .spawn_bundle(TransformBundle {
@@ -82,13 +87,14 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
         .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
         .insert(CustomFilterTag::GroupA)
         .insert(ParentData {
+            id: parent_data.id,
             size: parent_data.size,
             position: parent_data.position,
         })
         .id();
 
     let mut part_datas: Vec<Vec<PartData>> = Vec::new();
-    let mut parts: Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>> =
+    let mut parts: Vec<Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>> =
         Vec::new();
 
     // part_datas.push(Vec::new());
@@ -150,8 +156,8 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
     //     transform: Vec3::new(entity_pos.x, entity_pos.y - 10.0 - 40.0, 0.0),
     //     part_size: Vec2::new(10.0, 60.0),
     // });
-
     construct_entity(
+        0,
         &SelectedEntity {
             parent: true,
             parts: None,

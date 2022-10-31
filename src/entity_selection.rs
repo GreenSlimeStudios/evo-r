@@ -155,12 +155,14 @@ fn edit_selected_parts_system(
                         }
                     }
                     construct_entity(
+                        0,
                         &entity_selector,
                         &mut part_data.data,
                         &mut parts.parts,
                         (parent_entity, &parent_data),
                         &mut commands,
                     );
+                    break;
                 }
             }
         }

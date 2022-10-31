@@ -57,17 +57,19 @@ pub fn create_part_data(
     };
 }
 pub fn construct_entity(
+    id: usize,
     entity_selector: &SelectedEntity,
     part_datas: &mut Vec<Vec<PartData>>,
-    parts: &mut Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>,
+    parts: &mut Vec<Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>>,
     mut parent: (Entity, &ParentData),
     commands: &mut Commands,
 ) {
     delete_entities(commands, parts, parent.0);
-    parent.0 = spawn_parent(parent.1, commands, entity_selector.parent);
+    parent.0 = spawn_parent(parent.1, commands, entity_selector.parent, id);
 
+    parts.push(Vec::new());
     for i in 0..part_datas.len() {
-        parts.push(Vec::new());
+        parts[0].push(Vec::new());
         for j in 0..part_datas[i].len() {
             let is_part_selected: bool = match &entity_selector.parts {
                 Some(v) => v.contains(&(i, j)),
@@ -93,37 +95,143 @@ pub fn construct_entity(
                 }
             }
 
-            parts[i].push(create_part(&part_datas[i][j], commands, is_part_selected));
+            parts[0][i].push(create_part(&part_datas[i][j], commands, is_part_selected));
         }
     }
 
-    for i in 0..parts.len() {
+    for i in 0..parts[0].len() {
         // parts[i].reverse();
-        for j in 0..parts[i].len() {
-            commands.entity(parts[i][j].0).with_children(|cmd| {
+        for j in 0..parts[0][i].len() {
+            commands.entity(parts[0][i][j].0).with_children(|cmd| {
                 cmd.spawn()
-                    .insert(ImpulseJoint::new(parts[i][j].2, parts[i][j].3));
+                    .insert(ImpulseJoint::new(parts[0][i][j].2, parts[0][i][j].3));
             });
 
             commands
                 .entity(if part_datas[i][j].id.1 != 0 {
                     // if j + 1 != parts[i].len() {
                     //     parts[i][j + 1].2
-                    parts[part_datas[i][j].parent_id.0][part_datas[i][j].parent_id.1].2
+                    parts[0][part_datas[i][j].parent_id.0][part_datas[i][j].parent_id.1].2
                 } else {
                     parent.0
                 })
                 .with_children(|cmd| {
                     cmd.spawn()
-                        .insert(ImpulseJoint::new(parts[i][j].0, parts[i][j].1));
+                        .insert(ImpulseJoint::new(parts[0][i][j].0, parts[0][i][j].1));
                 });
         }
         // parts[i].reverse();
     }
 }
-#[derive(Component, Default, Reflect)]
+pub fn construct_entities(
+    group_size: usize,
+    entity_selector: &SelectedEntity,
+    part_datas: &mut Vec<Vec<PartData>>,
+    parts: &mut Query<&mut EntityParts>,
+    parents: Query<(Entity, &ParentData)>,
+    commands: &mut Commands,
+) {
+    let mut parent_data: ParentData = ParentData {
+        id: 0,
+        position: Vec3::ZERO,
+        size: Vec2::ZERO,
+    };
+    for parent in &parents {
+        parent_data = parent.1.clone();
+        for mut parts in &mut *parts {
+            delete_entities(commands, &mut parts.parts, parent.0);
+        }
+    }
+    // return;
+    // for mut parent in &parents {
+    for mut parts in &mut *parts {
+        let parts = &mut parts.parts;
+
+        println!("creating part datas");
+        // parts.push(Vec::new());
+        for i in 0..part_datas.len() {
+            for j in 0..part_datas[i].len() {
+                // let is_part_selected: bool = match &entity_selector.parts {
+                //     Some(v) => v.contains(&(i, j)),
+                //     None => false,
+                // };
+                let current_data: PartData = part_datas[i][j].clone();
+                let parent_leg_data: Option<PartData> = match j {
+                    0 => None,
+                    _ => {
+                        Some(part_datas[current_data.parent_id.0][current_data.parent_id.1].clone())
+                    }
+                };
+                match parent_leg_data {
+                    None => (),
+                    Some(data) => {
+                        part_datas[i][j] = create_part_data(
+                            current_data.parent_id,
+                            current_data.extra_joint_parent_offset,
+                            data,
+                            current_data.part_size,
+                            Some(current_data.joint_offset),
+                            current_data.id,
+                        );
+                        // PartData {
+                    }
+                }
+            }
+        }
+
+        for id in 0..group_size {
+            println!("constructing the parts for parent no. {}", id);
+            parts.push(Vec::new());
+            for i in 0..part_datas.len() {
+                parts[id].push(Vec::new());
+                for j in 0..part_datas[i].len() {
+                    let is_part_selected: bool = match &entity_selector.parts {
+                        Some(v) => v.contains(&(i, j)),
+                        None => false,
+                    };
+                    parts[id][i].push(create_part(&part_datas[i][j], commands, is_part_selected));
+                }
+            }
+
+            println!("attaching the parts together | parent no. {}", id);
+            let parent: Entity = spawn_parent(&parent_data, commands, entity_selector.parent, id);
+
+            // let ilen = parts.len() / (id + 1) - parts.len();
+            for i in 0..parts[id].len() {
+                // parts[i].reverse();
+                // let jlen = parts[i + ilen].len() / (id + 1);
+                for j in 0..parts[id][i].len() {
+                    commands.entity(parts[id][i][j].0).with_children(|cmd| {
+                        cmd.spawn()
+                            .insert(ImpulseJoint::new(parts[id][i][j].2, parts[id][i][j].3));
+                    });
+
+                    commands
+                        //error on j
+                        .entity(if part_datas[i][j].id.1 != 0 {
+                            // if j + 1 != parts[i].len() {
+                            //     parts[i][j + 1].2
+                            parts[id][part_datas[i][j].parent_id.0][part_datas[i][j].parent_id.1].2
+                        } else {
+                            parent
+                        })
+                        .with_children(|cmd| {
+                            cmd.spawn()
+                                .insert(ImpulseJoint::new(parts[id][i][j].0, parts[id][i][j].1));
+                        });
+                }
+            }
+            // parts[i].reverse();
+            // }
+            // break;
+        }
+    }
+}
+
+#[derive(Component, Default, Reflect, Clone)]
 #[reflect(Component)]
 pub struct ParentData {
+    pub id: usize,
     pub position: Vec3,
     pub size: Vec2,
 }
@@ -147,7 +255,7 @@ pub struct EntityData {
 #[reflect(Component)]
 pub struct EntityParts {
     #[reflect(ignore)]
-    pub parts: Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>,
+    pub parts: Vec<Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>>,
 }
 
 pub fn create_part(
@@ -221,14 +329,16 @@ pub fn create_part(
 }
 fn delete_entities(
     commands: &mut Commands,
-    parts: &mut Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>,
+    parts: &mut Vec<Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>>,
     parent: Entity,
 ) {
     commands.entity(parent).despawn_recursive();
     for i in 0..parts.len() {
         for j in 0..parts[i].len() {
-            commands.entity(parts[i][j].0).despawn_recursive();
-            commands.entity(parts[i][j].2).despawn_recursive();
+            for k in 0..parts[i][j].len() {
+                commands.entity(parts[i][j][k].0).despawn_recursive();
+                commands.entity(parts[i][j][k].2).despawn_recursive();
+            }
         }
     }
     parts.clear();
@@ -237,6 +347,7 @@ fn spawn_parent(
     parent_data: &ParentData,
     commands: &mut Commands,
     is_parent_selected: bool,
+    id: usize,
 ) -> Entity {
     commands
         .spawn_bundle(TransformBundle {
@@ -261,6 +372,7 @@ fn spawn_parent(
             },
         })
         .insert(ParentData {
+            id,
             size: parent_data.size,
             position: parent_data.position,
         })

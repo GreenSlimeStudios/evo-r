@@ -101,6 +101,7 @@ fn add_leg_system(
                                 entity_selector.parts = Some(vec![(index1, index2)]);
                                 entity_selector.parent = false;
                                 construct_entity(
+                                    0,
                                     &entity_selector,
                                     &mut entity_data.data,
                                     &mut entity_parts.parts,
@@ -111,6 +112,7 @@ fn add_leg_system(
                                 entity_selector.parts = None;
                                 entity_selector.parent = true;
                                 construct_entity(
+                                    0,
                                     &entity_selector,
                                     &mut entity_data.data,
                                     &mut entity_parts.parts,
@@ -192,6 +194,7 @@ fn add_leg_system(
                                         entity_selector.parent = false;
                                         entity_selector.parts = Some(vec![(leg.id.0, index2)]);
                                         construct_entity(
+                                            0,
                                             &entity_selector,
                                             &mut entity_data.data,
                                             &mut entity_parts.parts,
@@ -225,6 +228,7 @@ fn add_leg_system(
                                             entity_selector.parts = Some(vec![(leg.id)])
                                         }
                                         construct_entity(
+                                            0,
                                             &entity_selector,
                                             &mut entity_data.data,
                                             &mut entity_parts.parts,
@@ -265,6 +269,7 @@ fn add_leg_system(
                                 }
                             }
                         }
+                        // break;
                     }
                 }
             }
@@ -280,7 +285,11 @@ fn reset_entity_system(
     mut commands: Commands,
     keys: Res<Input<KeyCode>>,
     entity_selectors: Query<&SelectedEntity>,
+    reapier_config: Res<RapierConfiguration>,
 ) {
+    if reapier_config.gravity != Vec2::ZERO {
+        return;
+    }
     if keys.just_pressed(KeyCode::Q) == false {
         return;
     }
@@ -290,6 +299,7 @@ fn reset_entity_system(
                 part_data.data.clear();
 
                 construct_entity(
+                    0,
                     entity_selector,
                     &mut part_data.data,
                     &mut parts.parts,
@@ -297,6 +307,7 @@ fn reset_entity_system(
                     &mut commands,
                 );
             }
+            break;
         }
     }
 }
@@ -304,26 +315,34 @@ fn respawn_entity_system(
     entity_selectors: Query<&SelectedEntity>,
     keys: Res<Input<KeyCode>>,
     mut commands: Commands,
-    parent_entity: Query<(Entity, &ParentData)>,
+    parents: Query<(Entity, &ParentData)>,
     mut part_datas: Query<&mut EntityData>,
     mut parts: Query<&mut EntityParts>,
     // parts: ResMut<Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>>,
+    reapier_config: Res<RapierConfiguration>,
 ) {
     if keys.pressed(KeyCode::R) {
+        // for parent_entity in &parents {
         for entity_selector in &entity_selectors {
-            for parent_entity in &parent_entity {
-                for mut part_data in &mut part_datas {
-                    for mut parts in &mut parts {
-                        construct_entity(
-                            entity_selector,
-                            &mut part_data.data,
-                            &mut parts.parts,
-                            parent_entity,
-                            &mut commands,
-                        );
-                    }
-                }
+            for mut part_data in &mut part_datas {
+                // for mut parts in &mut parts {
+                construct_entities(
+                    if reapier_config.gravity == Vec2::ZERO {
+                        1
+                    } else {
+                        GROUP_SIZE
+                    },
+                    entity_selector,
+                    &mut part_data.data,
+                    &mut parts,
+                    parents,
+                    &mut commands,
+                );
+                break;
+                // }
             }
+            // }
+            break;
         }
     }
 }
