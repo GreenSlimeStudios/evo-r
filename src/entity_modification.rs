@@ -108,7 +108,9 @@ fn add_leg_system(
                                     (parent_entity, &parent_data),
                                     &mut commands,
                                 );
-                            } else if buttons.just_pressed(MouseButton::Right) {
+                            } else if buttons.just_pressed(MouseButton::Right)
+                                || keys.just_pressed(KeyCode::S)
+                            {
                                 entity_selector.parts = None;
                                 entity_selector.parent = true;
                                 construct_entity(
@@ -202,7 +204,9 @@ fn add_leg_system(
                                             &mut commands,
                                         );
                                         break;
-                                    } else if buttons.just_pressed(MouseButton::Right) {
+                                    } else if buttons.just_pressed(MouseButton::Right)
+                                        || keys.just_pressed(KeyCode::S)
+                                    {
                                         entity_selector.parent = false;
                                         if keys.pressed(KeyCode::LControl) {
                                             match &mut entity_selector.parts {

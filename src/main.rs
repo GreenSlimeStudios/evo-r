@@ -15,13 +15,14 @@ use entity_constructor::*;
 use entity_modification::*;
 use entity_selection::*;
 
-const GROUP_SIZE: usize = 3;
+const GROUP_SIZE: usize = 1;
 
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(0.2, 0.2, 0.2)))
         .insert_resource(WindowDescriptor {
             title: "evo-r".to_string(),
+            fit_canvas_to_parent: true,
             ..default()
         })
         .insert_resource(Msaa::default())
