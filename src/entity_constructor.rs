@@ -22,6 +22,13 @@ pub struct Leg {
 #[reflect(Component)]
 pub struct Joint;
 
+#[derive(Component, Default, Reflect)]
+#[reflect(Component)]
+pub struct RotationIndicator {
+    pub leg_id: (usize, usize),
+    pub left: bool,
+}
+
 /// Creates a part data representing a creature part based on the parent ~leg part data.
 pub fn create_part_data(
     parent_id: (usize, usize),
@@ -30,6 +37,7 @@ pub fn create_part_data(
     part_size: Vec2,
     joint_offset: Option<Vec2>,
     id: (usize, usize),
+    rotation_limit: Option<(f32, f32)>,
 ) -> PartData {
     let joint_offset: Vec2 = match joint_offset {
         Some(offset) => offset,
@@ -54,6 +62,7 @@ pub fn create_part_data(
             0.0 + extra_joint_parent_offset.x,
             -parent_data.part_size.y + extra_joint_parent_offset.y,
         ),
+        rotation_limit,
     };
 }
 
@@ -93,6 +102,7 @@ pub fn construct_entity(
                         current_data.part_size,
                         Some(current_data.joint_offset),
                         current_data.id,
+                        current_data.rotation_limit,
                     );
                 }
             }
@@ -124,6 +134,63 @@ pub fn construct_entity(
                     cmd.spawn()
                         .insert(ImpulseJoint::new(parts[0][i][j].0, parts[0][i][j].1));
                 });
+        }
+    }
+    // // spawn rotaion limit indicator
+    for i in 0..part_datas.len() {
+        for j in 0..part_datas[i].len() {
+            commands.entity(parts[0][i][j].0).with_children(|cmd| {
+                let left_rotation: Entity = cmd
+                    .spawn_bundle(TransformBundle {
+                        local: Transform::from_xyz(
+                            part_datas[i][j].transform.x + part_datas[i][j].joint_parrent_offset.x,
+                            part_datas[i][j].transform.y + part_datas[i][j].joint_parrent_offset.y,
+                            0.0,
+                        ),
+                        ..default()
+                    })
+                    .insert(RotationIndicator {
+                        leg_id: (part_datas[i][j].id),
+                        left: true,
+                    })
+                    .insert(Collider::cuboid(1.0, 10.0))
+                    .insert(ColliderDebugColor {
+                        0: Color::rgb(0.5, 0.5, 0.0),
+                    })
+                    .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
+                    .insert(CustomFilterTag::GroupA)
+                    .insert(Name::new("Left Rotation Indicator"))
+                    .id();
+                let right_rotation: Entity = cmd
+                    .spawn_bundle(TransformBundle {
+                        local: Transform::from_xyz(
+                            part_datas[i][j].transform.x,
+                            part_datas[i][j].transform.y,
+                            0.0,
+                        ),
+                        ..default()
+                    })
+                    .insert(RotationIndicator {
+                        leg_id: (part_datas[i][j].id),
+                        left: false,
+                    })
+                    .insert(Collider::cuboid(1.0, 10.0))
+                    .insert(ColliderDebugColor {
+                        0: Color::rgb(0.5, 0.5, 0.0),
+                    })
+                    .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
+                    .insert(CustomFilterTag::GroupA)
+                    .insert(Name::new("Right Rotation Indicator"))
+                    .id();
+                cmd.spawn().insert(ImpulseJoint::new(
+                    left_rotation,
+                    RevoluteJointBuilder::new().local_anchor1(Vec2::new(0.0, -5.0)),
+                ));
+                cmd.spawn().insert(ImpulseJoint::new(
+                    right_rotation,
+                    RevoluteJointBuilder::new().local_anchor1(Vec2::new(0.0, -5.0)),
+                ));
+            });
         }
     }
 }
@@ -172,6 +239,7 @@ pub fn construct_entities(
                             current_data.part_size,
                             Some(current_data.joint_offset),
                             current_data.id,
+                            current_data.rotation_limit,
                         );
                     }
                 }
@@ -230,6 +298,7 @@ pub struct ParentData {
     pub position: Vec3,
     pub size: Vec2,
 }
+/// Represents a part of the creature, used for part construction.
 #[derive(Clone, Copy)]
 pub struct PartData {
     pub parent_id: (usize, usize),
@@ -239,6 +308,7 @@ pub struct PartData {
     pub transform: Vec3,
     pub part_size: Vec2,
     pub id: (usize, usize),
+    pub rotation_limit: Option<(f32, f32)>,
 }
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]

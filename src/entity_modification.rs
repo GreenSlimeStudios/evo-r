@@ -10,6 +10,8 @@ impl Plugin for CreatureModificationPlugin {
             .add_system(toggle_gravity_system);
     }
 }
+
+/// Toggles between creature edtiting mode and running mode.
 fn toggle_gravity_system(
     entity_selectors: Query<&SelectedEntity>,
     keys: Res<Input<KeyCode>>,
@@ -56,6 +58,8 @@ fn toggle_gravity_system(
     }
 }
 
+/// Adds new parts to the creature by clicking on existing parts of the creature.
+/// Also this system is responsible for selecting parts for further modification handled in the entity_seletion.rs file.
 fn add_leg_system(
     reapier_config: Res<RapierConfiguration>,
     windows: Res<Windows>,
@@ -111,6 +115,7 @@ fn add_leg_system(
                                     joint_offset: Vec2::new(0.0, 40.0),
                                     transform: Vec3::new(position.x, position.y, 0.0),
                                     part_size: Vec2::new(10.0, 40.0),
+                                    rotation_limit: None,
                                 });
                                 entity_selector.parts = Some(vec![(index1, index2)]);
                                 entity_selector.parent = false;
@@ -167,6 +172,7 @@ fn add_leg_system(
                                                 - parent_leg_data.part_size.y * 2.0,
                                             0.0,
                                         ),
+                                        rotation_limit: parent_leg_data.rotation_limit,
                                     }
                                 };
                                 if (position.x
@@ -191,6 +197,7 @@ fn add_leg_system(
                                                 Vec2::new(10.0, 30.0),
                                                 None,
                                                 (leg.id.0, index2),
+                                                None,
                                             ), // PartData {
                                                // id: (leg.id.0, index2),
                                                // joint_parrent_offset: position

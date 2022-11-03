@@ -73,6 +73,48 @@ fn edit_selected_parts_system(
                                 None => (),
                                 Some(v) => {
                                     if v.contains(&(i, j)) {
+                                        let mut leg_data = part_data.data[i][j];
+                                        if keys.just_pressed(KeyCode::U) {
+                                            match leg_data.rotation_limit {
+                                                Some(mut limit) => {
+                                                    limit.0 -= 0.1;
+                                                }
+                                                None => {
+                                                    leg_data.rotation_limit = Some((-0.1, 0.0));
+                                                }
+                                            }
+                                        }
+                                        if keys.just_pressed(KeyCode::I) {
+                                            match leg_data.rotation_limit {
+                                                Some(mut limit) => {
+                                                    limit.0 += 0.1;
+                                                }
+                                                None => {
+                                                    leg_data.rotation_limit = Some((0.1, 0.0));
+                                                }
+                                            }
+                                        }
+                                        if keys.just_pressed(KeyCode::J) {
+                                            match leg_data.rotation_limit {
+                                                Some(mut limit) => {
+                                                    limit.1 -= 0.1;
+                                                }
+                                                None => {
+                                                    leg_data.rotation_limit = Some((0.0, -0.1));
+                                                }
+                                            }
+                                        }
+                                        if keys.just_pressed(KeyCode::K) {
+                                            match leg_data.rotation_limit {
+                                                Some(mut limit) => {
+                                                    limit.1 += 0.1;
+                                                }
+                                                None => {
+                                                    leg_data.rotation_limit = Some((0.0, 0.1));
+                                                }
+                                            }
+                                        }
+
                                         if keys.just_pressed(KeyCode::Up) {
                                             if keys.pressed(KeyCode::LControl) {
                                                 if j == 0 {
