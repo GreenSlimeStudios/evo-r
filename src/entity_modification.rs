@@ -22,6 +22,7 @@ fn toggle_gravity_system(
     mut reapier_config: ResMut<RapierConfiguration>,
     mut parent: Query<(&mut Transform, &mut Velocity, &ParentData), With<ParentData>>,
     mut legs: Query<(&mut Transform, &mut Velocity), Without<ParentData>>,
+    rotation_indicators: Query<Entity, With<RotationIndicator>>,
 ) {
     if keys.just_pressed(KeyCode::G) {
         if reapier_config.gravity == Vec2::ZERO {
@@ -37,6 +38,7 @@ fn toggle_gravity_system(
                         &mut parts,
                         parents,
                         &mut commands,
+                        &rotation_indicators,
                     );
                     break;
                 }
@@ -78,6 +80,7 @@ fn add_leg_system(
     mut legs: Query<(&GlobalTransform, &Leg, &mut ColliderDebugColor)>,
     keys: Res<Input<KeyCode>>,
     mut selected_entity: Query<&mut SelectedEntity>,
+    rotation_indicators: Query<Entity, With<RotationIndicator>>,
 ) {
     let window = windows.get_primary().unwrap();
 
@@ -126,6 +129,7 @@ fn add_leg_system(
                                     &mut entity_parts.parts,
                                     (parent_entity, &parent_data),
                                     &mut commands,
+                                    &rotation_indicators,
                                 );
                             } else if buttons.just_pressed(MouseButton::Right)
                                 || keys.just_pressed(KeyCode::S)
@@ -139,6 +143,7 @@ fn add_leg_system(
                                     &mut entity_parts.parts,
                                     (parent_entity, &parent_data),
                                     &mut commands,
+                                    &rotation_indicators,
                                 );
                             }
                             // break;
@@ -216,6 +221,7 @@ fn add_leg_system(
                                             &mut entity_parts.parts,
                                             (parent_entity, &parent_data),
                                             &mut commands,
+                                            &rotation_indicators,
                                         );
                                         break;
                                     } else if buttons.just_pressed(MouseButton::Right)
@@ -254,6 +260,7 @@ fn add_leg_system(
                                             &mut entity_parts.parts,
                                             (parent_entity, &parent_data),
                                             &mut commands,
+                                            &rotation_indicators,
                                         );
                                         break;
                                     }
@@ -302,6 +309,7 @@ fn reset_entity_system(
     keys: Res<Input<KeyCode>>,
     entity_selectors: Query<&SelectedEntity>,
     reapier_config: Res<RapierConfiguration>,
+    rotation_indicators: Query<Entity, With<RotationIndicator>>,
 ) {
     if reapier_config.gravity != Vec2::ZERO {
         return;
@@ -321,6 +329,7 @@ fn reset_entity_system(
                     &mut parts.parts,
                     (parent.0, &parent.1),
                     &mut commands,
+                    &rotation_indicators,
                 );
             }
             break;
@@ -336,6 +345,7 @@ fn respawn_entity_system(
     mut parts: Query<&mut EntityParts>,
     // parts: ResMut<Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>>,
     reapier_config: Res<RapierConfiguration>,
+    rotation_indicators: Query<Entity, With<RotationIndicator>>,
 ) {
     if keys.pressed(KeyCode::R) {
         // for parent_entity in &parents {
@@ -353,6 +363,7 @@ fn respawn_entity_system(
                     &mut parts,
                     parents,
                     &mut commands,
+                    &rotation_indicators,
                 );
                 break;
                 // }

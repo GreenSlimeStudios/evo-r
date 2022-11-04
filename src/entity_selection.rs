@@ -22,6 +22,7 @@ fn edit_selected_parts_system(
     mut parents: Query<(Entity, &mut ParentData)>,
     keys: Res<Input<KeyCode>>,
     entity_selectors: Query<&SelectedEntity>,
+    rotation_indicators: Query<Entity, With<RotationIndicator>>,
 ) {
     if keys.just_pressed(KeyCode::Down)
         || keys.just_pressed(KeyCode::Up)
@@ -203,6 +204,7 @@ fn edit_selected_parts_system(
                         &mut parts.parts,
                         (parent_entity, &parent_data),
                         &mut commands,
+                        &rotation_indicators,
                     );
                     break;
                 }

@@ -48,7 +48,11 @@ fn setup_graphics(mut commands: Commands) {
     });
 }
 
-pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierConfiguration>) {
+pub fn setup_physics(
+    mut commands: Commands,
+    mut reapier_config: ResMut<RapierConfiguration>,
+    rotation_indicators: Query<Entity, With<RotationIndicator>>,
+) {
     reapier_config.gravity = Vec2::new(0.0, 0.0);
 
     let ground_size = 50000.0;
@@ -97,6 +101,7 @@ pub fn setup_physics(mut commands: Commands, mut reapier_config: ResMut<RapierCo
         &mut parts,
         (parent_entity, &parent_data),
         &mut commands,
+        &rotation_indicators,
     );
 
     commands

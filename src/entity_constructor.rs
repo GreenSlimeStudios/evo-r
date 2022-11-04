@@ -8,7 +8,9 @@ impl Plugin for CreatureConstructorPlugin {
             .register_type::<Joint>()
             .register_type::<Leg>()
             .register_type::<EntityData>()
-            .register_type::<EntityParts>();
+            .register_type::<EntityParts>()
+            .register_type::<RotationIndicator>()
+            .add_system(indicator_positioning_system);
     }
 }
 
@@ -20,7 +22,9 @@ pub struct Leg {
 
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
-pub struct Joint;
+pub struct Joint {
+    pub id: (usize, usize, usize),
+}
 
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
@@ -66,6 +70,28 @@ pub fn create_part_data(
     };
 }
 
+fn indicator_positioning_system(
+    // mut commands: Commands,
+    joints: Query<(&GlobalTransform, &Joint)>,
+    part_data: Query<&EntityData>,
+    mut rotation_indicators: Query<(&mut Transform, &RotationIndicator)>,
+) {
+    for part_data in &part_data {
+        for (joint_transform, joint) in &joints {
+            for i in 0..2 {
+                for (mut inficator_transform, indicator) in
+                    rotation_indicators.iter_mut().find(|x| {
+                        x.1.leg_id == (joint.id.1, joint.id.2)
+                            && x.1.left == if i == 0 { true } else { false }
+                    })
+                {
+                    inficator_transform.translation = joint_transform.translation();
+                }
+            }
+        }
+    }
+}
+
 /// Deletes the edited creature and constructs it from the part data.
 pub fn construct_entity(
     id: usize,
@@ -74,8 +100,10 @@ pub fn construct_entity(
     parts: &mut Vec<Vec<Vec<(Entity, RevoluteJointBuilder, Entity, RevoluteJointBuilder)>>>,
     mut parent: (Entity, &ParentData),
     commands: &mut Commands,
+    rotation_indicators: &Query<Entity, With<RotationIndicator>>,
 ) {
     delete_creature_instance(commands, parts, parent.0);
+    delete_rotation_indicators(rotation_indicators, commands);
     parent.0 = spawn_parent(parent.1, commands, entity_selector.parent, id);
 
     // Constructs the parts
@@ -139,58 +167,57 @@ pub fn construct_entity(
     // // spawn rotaion limit indicator
     for i in 0..part_datas.len() {
         for j in 0..part_datas[i].len() {
-            commands.entity(parts[0][i][j].0).with_children(|cmd| {
-                let left_rotation: Entity = cmd
-                    .spawn_bundle(TransformBundle {
-                        local: Transform::from_xyz(
-                            part_datas[i][j].transform.x + part_datas[i][j].joint_parrent_offset.x,
-                            part_datas[i][j].transform.y + part_datas[i][j].joint_parrent_offset.y,
-                            0.0,
-                        ),
-                        ..default()
-                    })
-                    .insert(RotationIndicator {
-                        leg_id: (part_datas[i][j].id),
-                        left: true,
-                    })
-                    .insert(Collider::cuboid(1.0, 10.0))
-                    .insert(ColliderDebugColor {
-                        0: Color::rgb(0.5, 0.5, 0.0),
-                    })
-                    .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
-                    .insert(CustomFilterTag::GroupA)
-                    .insert(Name::new("Left Rotation Indicator"))
-                    .id();
-                let right_rotation: Entity = cmd
-                    .spawn_bundle(TransformBundle {
-                        local: Transform::from_xyz(
-                            part_datas[i][j].transform.x,
-                            part_datas[i][j].transform.y,
-                            0.0,
-                        ),
-                        ..default()
-                    })
-                    .insert(RotationIndicator {
-                        leg_id: (part_datas[i][j].id),
-                        left: false,
-                    })
-                    .insert(Collider::cuboid(1.0, 10.0))
-                    .insert(ColliderDebugColor {
-                        0: Color::rgb(0.5, 0.5, 0.0),
-                    })
-                    .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
-                    .insert(CustomFilterTag::GroupA)
-                    .insert(Name::new("Right Rotation Indicator"))
-                    .id();
-                cmd.spawn().insert(ImpulseJoint::new(
-                    left_rotation,
-                    RevoluteJointBuilder::new().local_anchor1(Vec2::new(0.0, -5.0)),
-                ));
-                cmd.spawn().insert(ImpulseJoint::new(
-                    right_rotation,
-                    RevoluteJointBuilder::new().local_anchor1(Vec2::new(0.0, -5.0)),
-                ));
-            });
+            // commands.entity(parts[0][i][j].0).with_children(|cmd| {
+            commands
+                .spawn_bundle(TransformBundle {
+                    local: Transform::from_xyz(
+                        part_datas[i][j].transform.x + part_datas[i][j].joint_parrent_offset.x,
+                        part_datas[i][j].transform.y + part_datas[i][j].joint_parrent_offset.y,
+                        0.0,
+                    ),
+                    ..default()
+                })
+                .insert(RotationIndicator {
+                    leg_id: (part_datas[i][j].id),
+                    left: true,
+                })
+                .insert(Collider::cuboid(1.0, 10.0))
+                .insert(ColliderDebugColor {
+                    0: Color::rgb(0.5, 0.5, 0.0),
+                })
+                .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
+                .insert(CustomFilterTag::GroupA)
+                .insert(Name::new("Left Rotation Indicator"));
+
+            commands
+                .spawn_bundle(TransformBundle {
+                    local: Transform::from_xyz(
+                        part_datas[i][j].transform.x,
+                        part_datas[i][j].transform.y,
+                        0.0,
+                    ),
+                    ..default()
+                })
+                .insert(RotationIndicator {
+                    leg_id: (part_datas[i][j].id),
+                    left: false,
+                })
+                .insert(Collider::cuboid(1.0, 10.0))
+                .insert(ColliderDebugColor {
+                    0: Color::rgb(0.5, 0.5, 0.0),
+                })
+                .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
+                .insert(CustomFilterTag::GroupA)
+                .insert(Name::new("Right Rotation Indicator"));
+            // cmd.spawn().insert(ImpulseJoint::new(
+            //     left_rotation,
+            //     RevoluteJointBuilder::new().local_anchor1(Vec2::new(0.0, -5.0)),
+            // ));
+            // cmd.spawn().insert(ImpulseJoint::new(
+            //     right_rotation,
+            //     RevoluteJointBuilder::new().local_anchor1(Vec2::new(0.0, -5.0)),
+            // ));
+            // });
         }
     }
 }
@@ -203,6 +230,7 @@ pub fn construct_entities(
     parts: &mut Query<&mut EntityParts>,
     parents: Query<(Entity, &ParentData)>,
     commands: &mut Commands,
+    rotation_indicators: &Query<Entity, With<RotationIndicator>>,
 ) {
     let mut parent_data: ParentData = ParentData {
         id: 0,
@@ -216,6 +244,7 @@ pub fn construct_entities(
             delete_creature_instance(commands, &mut parts.parts, parent.0);
         }
     }
+    delete_rotation_indicators(rotation_indicators, commands);
 
     for mut parts in &mut *parts {
         let parts = &mut parts.parts;
@@ -341,7 +370,9 @@ pub fn create_part(
             ..default()
         })
         .insert(Name::new("joint"))
-        .insert(Joint)
+        .insert(Joint {
+            id: (parent_body_id, part_data.id.0, part_data.id.1),
+        })
         .insert(Collider::cuboid(5.0, 5.0))
         .insert(RigidBody::Dynamic)
         .insert(ColliderDebugColor {
@@ -397,6 +428,16 @@ pub fn create_part(
         .id();
 
     (entity, joint_to_parrent, part_entity, joint_to_joint)
+}
+
+/// Deletes the rotation_indicators to make space for new ones.
+fn delete_rotation_indicators(
+    rotation_indicators: &Query<Entity, With<RotationIndicator>>,
+    commands: &mut Commands,
+) {
+    for indicator in rotation_indicators {
+        commands.entity(indicator).despawn_recursive();
+    }
 }
 
 /// Deletes a specified creature.
