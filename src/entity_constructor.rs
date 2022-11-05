@@ -79,13 +79,24 @@ fn indicator_positioning_system(
     for part_data in &part_data {
         for (joint_transform, joint) in &joints {
             for i in 0..2 {
-                for (mut inficator_transform, indicator) in
+                for (mut indicator_transform, _indicator) in
                     rotation_indicators.iter_mut().find(|x| {
                         x.1.leg_id == (joint.id.1, joint.id.2)
                             && x.1.left == if i == 0 { true } else { false }
                     })
                 {
-                    inficator_transform.translation = joint_transform.translation();
+                    indicator_transform.translation = joint_transform.translation();
+                    // println!("sussy");
+                    match part_data.data[joint.id.1][joint.id.2].rotation_limit {
+                        Some(limit) => {
+                            // println!("{} {}", limit.0, limit.1);
+                            indicator_transform.rotation =
+                                Quat::from_rotation_z(if i == 0 { limit.0 } else { limit.1 });
+                        }
+                        None => {
+                            // indicator_transform.rotation = Quat::from_rotation_z(0.0);
+                        }
+                    }
                 }
             }
         }

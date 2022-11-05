@@ -28,6 +28,10 @@ fn edit_selected_parts_system(
         || keys.just_pressed(KeyCode::Up)
         || keys.just_pressed(KeyCode::Left)
         || keys.just_pressed(KeyCode::Right)
+        || keys.just_pressed(KeyCode::U)
+        || keys.just_pressed(KeyCode::I)
+        || keys.just_pressed(KeyCode::J)
+        || keys.just_pressed(KeyCode::K)
     {
         for entity_selector in &entity_selectors {
             for (parent_entity, mut parent_data) in &mut parents {
@@ -74,44 +78,58 @@ fn edit_selected_parts_system(
                                 None => (),
                                 Some(v) => {
                                     if v.contains(&(i, j)) {
-                                        let mut leg_data = part_data.data[i][j];
+                                        // let mut leg_data = part_data.data[i][j];
+                                        println!("changing property of part ({}, {})", i, j);
+
                                         if keys.just_pressed(KeyCode::U) {
-                                            match leg_data.rotation_limit {
-                                                Some(mut limit) => {
-                                                    limit.0 -= 0.1;
+                                            match part_data.data[i][j].rotation_limit {
+                                                Some(limit) => {
+                                                    part_data.data[i][j].rotation_limit =
+                                                        Some((limit.0 - 0.5, limit.1));
                                                 }
                                                 None => {
-                                                    leg_data.rotation_limit = Some((-0.1, 0.0));
+                                                    println!("creating limit");
+                                                    part_data.data[i][j].rotation_limit =
+                                                        Some((-0.5, 0.0));
                                                 }
                                             }
                                         }
                                         if keys.just_pressed(KeyCode::I) {
-                                            match leg_data.rotation_limit {
-                                                Some(mut limit) => {
-                                                    limit.0 += 0.1;
+                                            match part_data.data[i][j].rotation_limit {
+                                                Some(limit) => {
+                                                    part_data.data[i][j].rotation_limit =
+                                                        Some((limit.0 + 0.5, limit.1));
                                                 }
                                                 None => {
-                                                    leg_data.rotation_limit = Some((0.1, 0.0));
+                                                    println!("creating limit");
+                                                    part_data.data[i][j].rotation_limit =
+                                                        Some((0.5, 0.0));
                                                 }
                                             }
                                         }
                                         if keys.just_pressed(KeyCode::J) {
-                                            match leg_data.rotation_limit {
-                                                Some(mut limit) => {
-                                                    limit.1 -= 0.1;
+                                            match part_data.data[i][j].rotation_limit {
+                                                Some(limit) => {
+                                                    part_data.data[i][j].rotation_limit =
+                                                        Some((limit.0, limit.1 - 0.5));
                                                 }
                                                 None => {
-                                                    leg_data.rotation_limit = Some((0.0, -0.1));
+                                                    println!("creating limit");
+                                                    part_data.data[i][j].rotation_limit =
+                                                        Some((0.0, -0.5));
                                                 }
                                             }
                                         }
                                         if keys.just_pressed(KeyCode::K) {
-                                            match leg_data.rotation_limit {
-                                                Some(mut limit) => {
-                                                    limit.1 += 0.1;
+                                            match part_data.data[i][j].rotation_limit {
+                                                Some(limit) => {
+                                                    part_data.data[i][j].rotation_limit =
+                                                        Some((limit.0, limit.1 + 0.5));
                                                 }
                                                 None => {
-                                                    leg_data.rotation_limit = Some((0.0, 0.1));
+                                                    println!("creating limit");
+                                                    part_data.data[i][j].rotation_limit =
+                                                        Some((0.0, 0.5));
                                                 }
                                             }
                                         }
@@ -133,7 +151,7 @@ fn edit_selected_parts_system(
                                                 part_data.data[i][j].part_size.y += 10.0;
                                                 part_data.data[i][j].joint_offset.y += 10.0;
                                             }
-                                        };
+                                        }
                                         if keys.just_pressed(KeyCode::Down) {
                                             if keys.pressed(KeyCode::LControl) {
                                                 if j == 0 {
@@ -153,7 +171,7 @@ fn edit_selected_parts_system(
                                                 part_data.data[i][j].part_size.y -= 10.0;
                                                 part_data.data[i][j].joint_offset.y -= 10.0;
                                             }
-                                        };
+                                        }
                                         if keys.just_pressed(KeyCode::Left) {
                                             if keys.pressed(KeyCode::LControl) {
                                                 if j == 0 {
@@ -172,7 +190,7 @@ fn edit_selected_parts_system(
                                             } else {
                                                 part_data.data[i][j].part_size.x -= 10.0;
                                             }
-                                        };
+                                        }
                                         if keys.just_pressed(KeyCode::Right) {
                                             if keys.pressed(KeyCode::LControl) {
                                                 if j == 0 {
@@ -191,7 +209,7 @@ fn edit_selected_parts_system(
                                             } else {
                                                 part_data.data[i][j].part_size.x += 10.0;
                                             }
-                                        };
+                                        }
                                     }
                                 }
                             }
