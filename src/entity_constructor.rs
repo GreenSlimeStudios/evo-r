@@ -90,8 +90,11 @@ fn indicator_positioning_system(
                     match part_data.data[joint.id.1][joint.id.2].rotation_limit {
                         Some(limit) => {
                             // println!("{} {}", limit.0, limit.1);
-                            indicator_transform.rotation =
-                                Quat::from_rotation_z(if i == 0 { limit.0 } else { limit.1 });
+                            // indicator_transform.rotation =
+                            //     Quat::from_rotation_z(if i == 0 { limit.0 } else { limit.1 });
+                            indicator_transform.rotation.z = if i == 0 { limit.0 } else { limit.1 };
+                            indicator_transform.rotation.x = 0.0;
+                            indicator_transform.rotation.y = 0.0;
                         }
                         None => {
                             // indicator_transform.rotation = Quat::from_rotation_z(0.0);
@@ -215,7 +218,7 @@ pub fn construct_entity(
                 })
                 .insert(Collider::cuboid(1.0, 10.0))
                 .insert(ColliderDebugColor {
-                    0: Color::rgb(0.5, 0.5, 0.0),
+                    0: Color::rgb(0.5, 0.5, 0.5),
                 })
                 .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
                 .insert(CustomFilterTag::GroupA)

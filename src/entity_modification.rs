@@ -26,7 +26,7 @@ fn toggle_gravity_system(
 ) {
     if keys.just_pressed(KeyCode::G) {
         if reapier_config.gravity == Vec2::ZERO {
-            reapier_config.gravity = Vec2::new(0.0, -250.0);
+            reapier_config.gravity = Vec2::new(0.0, -100.0);
         } else {
             reapier_config.gravity = Vec2::ZERO;
             for entity_selector in &entity_selectors {
