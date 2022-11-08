@@ -85,12 +85,12 @@ fn edit_selected_parts_system(
                                             match part_data.data[i][j].rotation_limit {
                                                 Some(limit) => {
                                                     part_data.data[i][j].rotation_limit =
-                                                        Some((limit.0 - 0.1, limit.1));
+                                                        Some((limit.0 - 10.0, limit.1));
                                                 }
                                                 None => {
                                                     println!("creating limit");
                                                     part_data.data[i][j].rotation_limit =
-                                                        Some((-0.1, 0.0));
+                                                        Some((-10.0, 0.0));
                                                 }
                                             }
                                         }
@@ -98,12 +98,12 @@ fn edit_selected_parts_system(
                                             match part_data.data[i][j].rotation_limit {
                                                 Some(limit) => {
                                                     part_data.data[i][j].rotation_limit =
-                                                        Some((limit.0 + 0.1, limit.1));
+                                                        Some((limit.0 + 10.0, limit.1));
                                                 }
                                                 None => {
                                                     println!("creating limit");
                                                     part_data.data[i][j].rotation_limit =
-                                                        Some((0.1, 0.0));
+                                                        Some((10.0, 0.0));
                                                 }
                                             }
                                         }
@@ -111,12 +111,12 @@ fn edit_selected_parts_system(
                                             match part_data.data[i][j].rotation_limit {
                                                 Some(limit) => {
                                                     part_data.data[i][j].rotation_limit =
-                                                        Some((limit.0, limit.1 - 0.1));
+                                                        Some((limit.0, limit.1 - 10.0));
                                                 }
                                                 None => {
                                                     println!("creating limit");
                                                     part_data.data[i][j].rotation_limit =
-                                                        Some((0.0, -0.1));
+                                                        Some((0.0, -10.0));
                                                 }
                                             }
                                         }
@@ -124,12 +124,12 @@ fn edit_selected_parts_system(
                                             match part_data.data[i][j].rotation_limit {
                                                 Some(limit) => {
                                                     part_data.data[i][j].rotation_limit =
-                                                        Some((limit.0, limit.1 + 0.1));
+                                                        Some((limit.0, limit.1 + 10.0));
                                                 }
                                                 None => {
                                                     println!("creating limit");
                                                     part_data.data[i][j].rotation_limit =
-                                                        Some((0.0, 0.1));
+                                                        Some((0.0, 10.0));
                                                 }
                                             }
                                         }

@@ -4,6 +4,7 @@ mod creature_movement;
 mod entity_constructor;
 mod entity_modification;
 mod entity_selection;
+mod utils;
 
 use bevy::prelude::*;
 use bevy_inspector_egui::WorldInspectorPlugin;
@@ -14,6 +15,7 @@ use creature_movement::*;
 use entity_constructor::*;
 use entity_modification::*;
 use entity_selection::*;
+// use utils::*;
 
 const GROUP_SIZE: usize = 10;
 
