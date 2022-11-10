@@ -42,6 +42,11 @@ fn main() {
         .add_startup_system(setup_physics)
         .run();
 }
+#[derive(PartialEq)]
+pub enum GlobalState {
+    Edit,
+    Run,
+}
 
 fn setup_graphics(mut commands: Commands) {
     commands.spawn_bundle(Camera2dBundle {

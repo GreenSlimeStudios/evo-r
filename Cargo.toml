@@ -20,3 +20,4 @@ runner = "wasm-server-runner"
 bevy={version="0.8"}
 bevy-inspector-egui = "0.13.0"
 bevy_rapier2d = "0.17.0"
+rand = "0.8.5"

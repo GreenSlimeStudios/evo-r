@@ -1,4 +1,6 @@
-use crate::*;
+use crate::{utils::change_angle, *};
+
+const ADJUSTION_ANGLE: f32 = 10.0;
 
 pub struct PartSelectionPlugin;
 impl Plugin for PartSelectionPlugin {
@@ -84,52 +86,68 @@ fn edit_selected_parts_system(
                                         if keys.just_pressed(KeyCode::U) {
                                             match part_data.data[i][j].rotation_limit {
                                                 Some(limit) => {
-                                                    part_data.data[i][j].rotation_limit =
-                                                        Some((limit.0 - 10.0, limit.1));
+                                                    part_data.data[i][j].rotation_limit = Some((
+                                                        change_angle(limit.0, -ADJUSTION_ANGLE),
+                                                        limit.1,
+                                                    ));
                                                 }
                                                 None => {
                                                     println!("creating limit");
-                                                    part_data.data[i][j].rotation_limit =
-                                                        Some((-10.0, 0.0));
+                                                    part_data.data[i][j].rotation_limit = Some((
+                                                        change_angle(0.0, -ADJUSTION_ANGLE),
+                                                        0.0,
+                                                    ));
                                                 }
                                             }
                                         }
                                         if keys.just_pressed(KeyCode::I) {
                                             match part_data.data[i][j].rotation_limit {
                                                 Some(limit) => {
-                                                    part_data.data[i][j].rotation_limit =
-                                                        Some((limit.0 + 10.0, limit.1));
+                                                    part_data.data[i][j].rotation_limit = Some((
+                                                        change_angle(limit.0, ADJUSTION_ANGLE),
+                                                        limit.1,
+                                                    ));
                                                 }
                                                 None => {
                                                     println!("creating limit");
-                                                    part_data.data[i][j].rotation_limit =
-                                                        Some((10.0, 0.0));
+                                                    part_data.data[i][j].rotation_limit = Some((
+                                                        change_angle(0.0, ADJUSTION_ANGLE),
+                                                        0.0,
+                                                    ));
                                                 }
                                             }
                                         }
                                         if keys.just_pressed(KeyCode::J) {
                                             match part_data.data[i][j].rotation_limit {
                                                 Some(limit) => {
-                                                    part_data.data[i][j].rotation_limit =
-                                                        Some((limit.0, limit.1 - 10.0));
+                                                    part_data.data[i][j].rotation_limit = Some((
+                                                        limit.0,
+                                                        change_angle(limit.1, -ADJUSTION_ANGLE),
+                                                    ));
                                                 }
                                                 None => {
                                                     println!("creating limit");
-                                                    part_data.data[i][j].rotation_limit =
-                                                        Some((0.0, -10.0));
+                                                    part_data.data[i][j].rotation_limit = Some((
+                                                        0.0,
+                                                        change_angle(0.0, -ADJUSTION_ANGLE),
+                                                    ));
                                                 }
                                             }
                                         }
                                         if keys.just_pressed(KeyCode::K) {
                                             match part_data.data[i][j].rotation_limit {
                                                 Some(limit) => {
-                                                    part_data.data[i][j].rotation_limit =
-                                                        Some((limit.0, limit.1 + 10.0));
+                                                    part_data.data[i][j].rotation_limit = Some((
+                                                        limit.0,
+                                                        change_angle(limit.1, ADJUSTION_ANGLE),
+                                                    ));
                                                 }
                                                 None => {
                                                     println!("creating limit");
-                                                    part_data.data[i][j].rotation_limit =
-                                                        Some((0.0, 10.0));
+                                                    part_data.data[i][j].rotation_limit = Some((
+                                                        0.0,
+                                                        change_angle(0.0, ADJUSTION_ANGLE),
+                                                    ));
                                                 }
                                             }
                                         }
