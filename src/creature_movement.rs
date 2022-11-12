@@ -1,7 +1,5 @@
-use crate::{
-    utils::{angle_to_radian, radian_to_angle},
-    *,
-};
+use crate::utils::*;
+use crate::*;
 use bevy::prelude::*;
 
 pub struct CreatureMovmentPlugin;
@@ -39,7 +37,7 @@ fn move_parts(
             if leg_velocity.angvel < -50.0 {
                 leg_velocity.angvel = -50.0;
             }
-            let parent_part_rotation: f32 = match part_data.data[leg.id.1][leg.id.2].parent_id {
+            let mut parent_part_rotation: f32 = match part_data.data[leg.id.1][leg.id.2].parent_id {
                 (0, 0) => {
                     parents
                         .iter()
@@ -57,42 +55,58 @@ fn move_parts(
                         .0
                 } // v => part_data.data[v.0][v.1].,
             };
+            // parent_part_rotation = angle_to_radian(radian_to_angle(parent_part_rotation));
+            parent_part_rotation = 0.0;
 
             match part_data.data[leg.id.1][leg.id.2].rotation_limit {
                 Some(limit) => {
-                    if radian_to_angle(transform.rotation.z)
-                        < radian_to_angle(
-                            Quat::from_rotation_z(angle_to_radian(limit.0) + parent_part_rotation)
-                                .z,
-                        )
-                    {
-                        println!("limit 1");
-                        transform.rotation =
-                            Quat::from_rotation_z(angle_to_radian(limit.0) + parent_part_rotation);
-                        leg_velocity.angvel = 0.4;
-                        // leg_velocity.angvel = leg_velocity.angvel.abs();
-                        // transform.rotation.z = limit.0;
-                        // transform.rotation.x = 0.0;
-                        // transform.rotation.y = 0.0;
-                        // leg_velocity.angvel = 0.0;
+                    let mut angle: f32 =
+                        transform.rotation.z.asin() * 180.0 * 2.0 / std::f32::consts::PI;
+                    if angle < 0.0 {
+                        angle += 360.0;
                     }
-                    if radian_to_angle(transform.rotation.z)
-                        > radian_to_angle(
-                            Quat::from_rotation_z(angle_to_radian(limit.1) + parent_part_rotation)
-                                .z,
-                        )
-                    {
-                        println!("limit 2");
-                        // if radian_to_angle(transform.rotation.z) > limit.1 {
-                        transform.rotation =
-                            Quat::from_rotation_z(angle_to_radian(limit.1) + parent_part_rotation);
+                    if is_angle_between(angle, limit.0, limit.1) {
+                        return;
+                    }
+                    let mut is_cross_limit_1: bool = false;
+                    let mut is_cross_limit_2: bool = false;
+                    if is_surpasing_limit_1(angle, change_angle(limit.0, 1.0), limit.1) {
+                        is_cross_limit_1 = true;
+                    }
+                    if is_surpasing_limit_2(angle, limit.0, change_angle(limit.1, -1.0)) {
+                        is_cross_limit_2 = true;
+                    }
+
+                    if is_cross_limit_1 && is_cross_limit_2 == false {
+                        transform.rotation = Quat::from_rotation_z(
+                            angle_to_radian_full(limit.0) + parent_part_rotation,
+                        );
+                        leg_velocity.angvel = 0.4;
+                    } else if is_cross_limit_2 && is_cross_limit_1 == false {
+                        transform.rotation = Quat::from_rotation_z(
+                            angle_to_radian_full(limit.1) + parent_part_rotation,
+                        );
                         leg_velocity.angvel = -0.4;
-                        // leg_velocity.angvel = -leg_velocity.angvel.abs();
-                        // transform.rotation = Quat::from_rotation_z(limit.1);
-                        // transform.rotation.z = limit.1;
-                        // transform.rotation.x = 0.0;
-                        // transform.rotation.y = 0.0;
-                        // leg_velocity.angvel = 0.0;
+                    } else if is_cross_limit_1 && is_cross_limit_2 {
+                        let mut dist1 = (limit.0 - angle).abs();
+                        if dist1 > 180.0 {
+                            dist1 = (angle - limit.0).abs();
+                        }
+                        let mut dist2 = (limit.1 - angle).abs();
+                        if dist2 > 180.0 {
+                            dist2 = (angle - limit.1).abs();
+                        }
+                        if dist1 < dist2 {
+                            transform.rotation = Quat::from_rotation_z(
+                                angle_to_radian_full(limit.0) + parent_part_rotation,
+                            );
+                            leg_velocity.angvel = 0.4;
+                        } else {
+                            transform.rotation = Quat::from_rotation_z(
+                                angle_to_radian_full(limit.1) + parent_part_rotation,
+                            );
+                            leg_velocity.angvel = -0.4;
+                        }
                     }
                 }
                 None => (),

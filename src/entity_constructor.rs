@@ -1,5 +1,6 @@
-use crate::{utils::angle_to_radian, *};
+use crate::*;
 use bevy::prelude::*;
+use utils::*;
 
 pub struct CreatureConstructorPlugin;
 impl Plugin for CreatureConstructorPlugin {
@@ -93,7 +94,7 @@ fn indicator_positioning_system(
                             // indicator_transform.rotation =
                             //     Quat::from_rotation_z(if i == 0 { limit.0 } else { limit.1 });
                             indicator_transform.rotation =
-                                Quat::from_rotation_z(angle_to_radian(if i == 0 {
+                                Quat::from_rotation_z(angle_to_radian_full(if i == 0 {
                                     limit.0
                                 } else {
                                     limit.1

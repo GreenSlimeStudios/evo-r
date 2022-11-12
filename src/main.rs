@@ -15,6 +15,7 @@ use creature_movement::*;
 use entity_constructor::*;
 use entity_modification::*;
 use entity_selection::*;
+use utils::*;
 // use utils::*;
 
 const GROUP_SIZE: usize = 10;
@@ -40,6 +41,8 @@ fn main() {
         .add_plugin(CameraAdditionsPlugin)
         .add_startup_system(setup_graphics)
         .add_startup_system(setup_physics)
+        .add_startup_system(rotation_test_setup)
+        .add_system(rotation_testing_system)
         .run();
 }
 #[derive(PartialEq)]
@@ -134,4 +137,35 @@ pub fn setup_physics(
 
 pub fn to_vec2(vec3: &Vec3) -> Vec2 {
     Vec2::new(vec3.x, vec3.y)
+}
+
+fn rotation_test_setup(mut commands: Commands) {
+    commands
+        .spawn_bundle(TransformBundle {
+            local: Transform::from_xyz(50.0, -100.0, 0.0),
+            ..default()
+        })
+        .insert(RotationTest { rotation: 0.0 })
+        .insert(Name::new("RotationTest"))
+        .insert(Collider::cuboid(10.0, 40.0));
+}
+#[derive(Component)]
+struct RotationTest {
+    rotation: f32,
+}
+
+fn rotation_testing_system(
+    keys: Res<Input<KeyCode>>,
+    mut rotators: Query<(&mut Transform, &mut RotationTest)>,
+) {
+    for (mut transform, mut rotator) in &mut rotators {
+        if keys.just_pressed(KeyCode::Key4) {
+            rotator.rotation = change_angle(rotator.rotation, -10.0);
+            transform.rotation = Quat::from_rotation_z(angle_to_radian_full(rotator.rotation));
+        }
+        if keys.just_pressed(KeyCode::Key5) {
+            rotator.rotation = change_angle(rotator.rotation, 10.0);
+            transform.rotation = Quat::from_rotation_z(angle_to_radian_full(rotator.rotation));
+        }
+    }
 }
