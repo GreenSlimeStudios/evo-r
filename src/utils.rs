@@ -71,6 +71,18 @@ pub fn is_surpasing_limit_2(angle: f32, limit_a: f32, limit_b: f32) -> bool {
         return angle > limit_b;
     }
 }
+pub fn angle_from_sin(x: f32) -> f32 {
+    let mut angle: f32 = x.asin() * 180.0 * 2.0 / std::f32::consts::PI;
+    if angle < 0.0 {
+        angle += 360.0;
+    }
+    angle
+}
+pub fn calculate_distance(alpha: f32, beta: f32) -> i32 {
+    let phi: i32 = (beta.round() as i32 - alpha.round() as i32).abs();
+    let distance: i32 = if phi > 180 { 360 - phi } else { phi };
+    distance
+}
 
 #[test]
 fn change_angle_test() {
